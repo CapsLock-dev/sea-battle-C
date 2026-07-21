@@ -1,0 +1,93 @@
+{
+	"version": 10,
+	"cmakeMinimumRequired": {
+		"major": 3,
+		"minor": 25,
+		"patch": 0
+	},
+	"configurePresets": [
+		{
+			"name": "base",
+			"hidden": true,
+			"binaryDir": "${sourceDir}/build/${presetName}",
+			"cacheVariables": {
+				"CMAKE_C_STANDARD": "23",
+				"CMAKE_C_FLAGS": "-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion",
+				"CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_C_EXTENSIONS": "OFF",
+				"BUILD_TESTING": "OFF",
+				"BUILD_SHARED_LIBS": "ON"
+			}
+		},
+		{
+			"name": "flags-sanitizers",
+			"hidden": true,
+			"cacheVariables": {
+				"CMAKE_C_FLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+				"CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined ",
+				"CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=address,undefined"
+			}
+		},
+		{
+			"name": "Debug",
+			"displayName": "Debug",
+			"description": "Debug build with strict warnings and sanitizers.",
+			"inherits": [
+				"base",
+				"flags-sanitizers"
+			],
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug"
+			}
+		},
+		{
+			"name": "Debug-tests",
+			"displayName": "Debug-tests",
+			"description": "Debug build with strict warnings and tests.",
+			"inherits": [
+				"base",
+                "flags-sanitizers"
+			],
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug",
+				"BUILD_TESTING": "ON"
+			}
+		},
+		{
+			"name": "Debug-tests-map-tree",
+			"displayName": "Debug-tests",
+			"description": "Debug build with strict warnings and tests.",
+			"inherits": [
+				"base",
+                "flags-sanitizers"
+			],
+			"cacheVariables": {
+                "MAP_TREE": "ON",
+				"CMAKE_BUILD_TYPE": "Debug",
+				"BUILD_TESTING": "ON"
+			}
+		},
+		{
+			"name": "Debug-tests-map-hashtable",
+			"displayName": "Debug-tests",
+			"description": "Debug build with strict warnings and tests.",
+			"inherits": [
+				"base",
+                "flags-sanitizers"
+			],
+			"cacheVariables": {
+                "MAP_HASHTABLE": "ON",
+				"CMAKE_BUILD_TYPE": "Debug",
+				"BUILD_TESTING": "ON"
+			}
+		}
+	],
+	"testPresets": [
+		{
+			"name": "Debug",
+			"configurePreset": "Debug-tests",
+			"output": {"outputOnFailure": true},
+			"execution": {"noTestsAction": "error", "stopOnFailure": true}
+		}
+	]
+}

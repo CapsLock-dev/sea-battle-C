@@ -1,0 +1,20 @@
+#ifndef CL_MAP_MAP_H
+#define CL_MAP_MAP_H
+#include <stddef.h>
+#include "map/errors.h"
+
+typedef struct Map Map;
+
+typedef struct {
+    int x;
+    int y;
+} Coord;
+
+Map* map_init(size_t size);
+void map_free(Map* m);
+
+MapEC map_insert(Map* m, Coord key, int value);
+MapEC map_delete(Map* m, Coord key);
+MapEC map_find(Map* m, Coord key, int** out_value);
+
+#endif
