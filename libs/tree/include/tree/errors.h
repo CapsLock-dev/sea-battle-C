@@ -2,7 +2,7 @@
 #define CL_TREE_ERRORS_H
 
 typedef enum {
-    TREE_EC_Undefined,
+    TREE_EC_UndefinedError,
     TREE_EC_AllocationError,
     TREE_EC_IsNull,
     TREE_EC_IncorrectType,
@@ -11,7 +11,7 @@ typedef enum {
 
     TREE_EC_KeyExists,
     TREE_EC_KeyDoesntExists,
-    TREE_EC_Full,
+    TREE_EC_UnexpectedError,
 
     TREE_EC_Ok,
 } TreeEC;

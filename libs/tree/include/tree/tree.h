@@ -6,8 +6,8 @@
 #include <stddef.h>
 
 typedef struct Node Node;
-#define TREE_ENTRY_COUNT 3
-#define TREE_CHILDREN_COUNT 4 
+#define TREE_MAX_ENTRY_COUNT 3
+#define TREE_MAX_CHILDREN_COUNT 4
 
 typedef struct {
     DataEnvelope* key;
@@ -15,8 +15,8 @@ typedef struct {
 } Entry; 
 
 struct Node {
-    Entry entries[TREE_ENTRY_COUNT];
-	Node* children[TREE_CHILDREN_COUNT];
+    Entry entries[TREE_MAX_ENTRY_COUNT];
+	Node* children[TREE_MAX_CHILDREN_COUNT];
     size_t curr_entry_count;
 };
 
