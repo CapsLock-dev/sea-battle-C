@@ -28,4 +28,5 @@ target_sources(map
 		FILES
 			include/map/map.h
 			include/map/errors.h
+            include/map/internal/entry.h
 )

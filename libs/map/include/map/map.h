@@ -2,13 +2,9 @@
 #define CL_MAP_MAP_H
 #include <stddef.h>
 #include "map/errors.h"
+#include "map/internal/entry.h"
 
 typedef struct Map Map;
-
-typedef struct {
-    int x;
-    int y;
-} Coord;
 
 Map* map_init(size_t size);
 void map_free(Map* m);
