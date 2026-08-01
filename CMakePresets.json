@@ -1,76 +1,146 @@
 {
-	"version": 10,
-	"cmakeMinimumRequired": {
-		"major": 3,
-		"minor": 25,
-		"patch": 0
-	},
-	"configurePresets": [
-		{
-			"name": "base",
-			"hidden": true,
-			"binaryDir": "${sourceDir}/build/${presetName}",
-			"cacheVariables": {
-				"CMAKE_C_STANDARD": "23",
-				"CMAKE_C_FLAGS": "-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion",
-				"CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+    "version": 10,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 25,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_C_STANDARD": "23",
+                "CMAKE_C_FLAGS": "-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CMAKE_C_EXTENSIONS": "OFF",
-				"BUILD_TESTING": "OFF",
-				"BUILD_SHARED_LIBS": "ON"
-			}
-		},
-		{
-			"name": "flags-sanitizers",
-			"hidden": true,
-			"cacheVariables": {
-				"CMAKE_C_FLAGS": "-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -fsanitize=address,undefined -fno-omit-frame-pointer",
-				"CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined",
-				"CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=address,undefined"
-			}
-		},
-		{
-			"name": "Debug-tests-tree",
-			"displayName": "Debug-tests-tree",
-			"description": "Debug build with strict warnings and tests.",
-			"inherits": [
-                "flags-sanitizers",
-				"base"
-			],
-			"cacheVariables": {
+                "BUILD_TESTING": "OFF",
+                "BUILD_SHARED_LIBS": "ON"
+            }
+        },
+        {
+            "name": "flags-sanitizers",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_C_FLAGS": "-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -fsanitize=address,undefined -fno-omit-frame-pointer",
+                "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined",
+                "CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=address,undefined"
+            }
+        },
+        {
+            "name": "Debug-tests-tree",
+            "displayName": "Debug-tests-tree",
+            "description": "Debug build with strict warnings and tests.",
+            "inherits": ["flags-sanitizers", "base"],
+            "cacheVariables": {
                 "MAP_TREE": "ON",
                 "MAP_HASHTABLE": "OFF",
-				"CMAKE_BUILD_TYPE": "Debug",
-				"BUILD_TESTING": "ON"
-			}
-		},
-		{
-			"name": "Debug-tests-hashtable",
-			"displayName": "Debug-tests-hashtable",
-			"description": "Debug build with strict warnings and tests.",
-			"inherits": [
-                "flags-sanitizers",
-				"base"
-			],
-			"cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_TESTING": "ON"
+            }
+        },
+        {
+            "name": "Debug-tests-hashtable",
+            "displayName": "Debug-tests-hashtable",
+            "description": "Debug build with strict warnings and tests.",
+            "inherits": ["flags-sanitizers", "base"],
+            "cacheVariables": {
                 "MAP_HASHTABLE": "ON",
                 "MAP_TREE": "OFF",
-				"CMAKE_BUILD_TYPE": "Debug",
-				"BUILD_TESTING": "ON"
-			}
-		}
-	],
-	"testPresets": [
-		{
-			"name": "Debug-tree",
-			"configurePreset": "Debug-tests-tree",
-			"output": {"outputOnFailure": true},
-			"execution": {"noTestsAction": "error", "stopOnFailure": true}
-		},
-		{
-			"name": "Debug-hashtable",
-			"configurePreset": "Debug-tests-hashtable",
-			"output": {"outputOnFailure": true},
-			"execution": {"noTestsAction": "error", "stopOnFailure": true}
-		}
-	]
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_TESTING": "ON"
+            }
+        },
+        {
+            "name": "Release-tests-tree",
+            "displayName": "Release-tests-tree",
+            "description": "Optimized release build with strict warnings and tests, map backed by tree.",
+            "inherits": ["base"],
+            "cacheVariables": {
+                "MAP_TREE": "ON",
+                "MAP_HASHTABLE": "OFF",
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_TESTING": "ON"
+            }
+        },
+        {
+            "name": "Release-tests-hashtable",
+            "displayName": "Release-tests-hashtable",
+            "description": "Optimized release build with strict warnings and tests, map backed by hash table.",
+            "inherits": ["base"],
+            "cacheVariables": {
+                "MAP_HASHTABLE": "ON",
+                "MAP_TREE": "OFF",
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_TESTING": "ON"
+            }
+        }
+    ],
+    "buildPresets": [
+        { "name": "Debug-tests-hashtable", "configurePreset": "Debug-tests-hashtable" },
+        { "name": "Debug-tests-tree", "configurePreset": "Debug-tests-tree" },
+        { "name": "Release-tests-hashtable", "configurePreset": "Release-tests-hashtable" },
+        { "name": "Release-tests-tree", "configurePreset": "Release-tests-tree" }
+    ],
+    "testPresets": [
+        {
+            "name": "Debug-tree",
+            "configurePreset": "Debug-tests-tree",
+            "output": { "outputOnFailure": true },
+            "execution": { "noTestsAction": "error", "stopOnFailure": true }
+        },
+        {
+            "name": "Debug-hashtable",
+            "configurePreset": "Debug-tests-hashtable",
+            "output": { "outputOnFailure": true },
+            "execution": { "noTestsAction": "error", "stopOnFailure": true }
+        },
+        {
+            "name": "Release-tree",
+            "configurePreset": "Release-tests-tree",
+            "output": { "outputOnFailure": true },
+            "execution": { "noTestsAction": "error", "stopOnFailure": true }
+        },
+        {
+            "name": "Release-hashtable",
+            "configurePreset": "Release-tests-hashtable",
+            "output": { "outputOnFailure": true },
+            "execution": { "noTestsAction": "error", "stopOnFailure": true }
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "test-tree",
+            "steps": [
+                { "type": "configure", "name": "Debug-tests-tree" },
+                { "type": "build", "name": "Debug-tests-tree" },
+                { "type": "test", "name": "Debug-tree" }
+            ]
+        },
+        {
+            "name": "test-hashtable",
+            "steps": [
+                { "type": "configure", "name": "Debug-tests-hashtable" },
+                { "type": "build", "name": "Debug-tests-hashtable" },
+                { "type": "test", "name": "Debug-hashtable" }
+            ]
+        },
+        {
+            "name": "test-release-tree",
+            "steps": [
+                { "type": "configure", "name": "Release-tests-tree" },
+                { "type": "build", "name": "Release-tests-tree" },
+                { "type": "test", "name": "Release-tree" }
+            ]
+        },
+        {
+            "name": "test-release-hashtable",
+            "steps": [
+                { "type": "configure", "name": "Release-tests-hashtable" },
+                { "type": "build", "name": "Release-tests-hashtable" },
+                { "type": "test", "name": "Release-hashtable" }
+            ]
+        }
+    ]
 }
