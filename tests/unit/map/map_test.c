@@ -6,7 +6,7 @@
 #define envelope(type, data) s_envelope_init(envelope_create(type, data))
 
 TEST_F(MapInit) {
-    Map* map = map_init(0);
+    Map* map = map_init(100);
     EXPECT_TRUE(map != NULL);
 
     TEAR_DOWN(
@@ -15,7 +15,7 @@ TEST_F(MapInit) {
 }
 #define TEST_ARRAY_SIZE 500
 TEST_F(MapInsert) {
-    Map* map = map_init(0);
+    Map* map = map_init(1000);
     EXPECT_TRUE(map != NULL);
 
     MapEC ec = MAP_ERR_Undefined;
@@ -37,7 +37,7 @@ TEST_F(MapInsert) {
 }
 
 TEST_F(MapDelete) {
-    Map* map = map_init(0);
+    Map* map = map_init(1000);
     EXPECT_TRUE(map != NULL);
 
     MapEC ec = MAP_ERR_Undefined;
@@ -64,7 +64,7 @@ TEST_F(MapDelete) {
 }
 
 TEST_F(MapFind) {
-    Map* map = map_init(0);
+    Map* map = map_init(1000);
     EXPECT_TRUE(map != NULL);
 
     MapEC ec = MAP_ERR_Undefined;

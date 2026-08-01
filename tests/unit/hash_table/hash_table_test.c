@@ -1,5 +1,6 @@
 #include "cltest/cltest.h"
 #include "test-utils/envelope_destructor.h"
+#include "test-utils/array_tools.h"
 #include "hash_table/hash_table.h"
 #include <stdlib.h>
 
@@ -37,7 +38,7 @@ TEST_F(HashTableInit) {
     EXPECT_TRUE(coord_type != NULL);
     EXPECT_TRUE(int_type != NULL);
 
-    ht = hash_table_init(100, coord_type, int_type);
+    ht = hash_table_init(coord_type, int_type);
     EXPECT_TRUE(ht != NULL);
 
     TEAR_DOWN(
@@ -47,36 +48,32 @@ TEST_F(HashTableInit) {
     )
 }
 
+#define TEST_ARRAY_SIZE 500
+
 TEST_F(HashTableInsert) {
-    Coord a = {.x = 10, .y = 1};
-    Coord b = {.x = 12, .y = 1};
-    Coord c = {.x = 1, .y = 2};
-    int a1 = 1;
     HashTable* ht = NULL;
     const DataType* coord_type = datatype_create(1, cmp_coord, hash_coord, sizeof(Coord));
     const DataType* int_type = datatype_create(2, NULL, NULL, sizeof(int));
     EXPECT_TRUE(coord_type != NULL);
     EXPECT_TRUE(int_type != NULL);
 
-    ht = hash_table_init(2, coord_type, int_type);
+    ht = hash_table_init(coord_type, int_type);
     EXPECT_TRUE(ht != NULL);
 
-    DataEnvelope* env_a = envelope(coord_type, &a);
-    DataEnvelope* env_b = envelope(coord_type, &b);
-    DataEnvelope* env_c = envelope(coord_type, &c);
-    DataEnvelope* val_a1 = envelope(int_type, &a1);
-
-    HashTableEC ec = hash_table_insert(ht, env_a, val_a1);
-    EXPECT_EQ_NUM(ec, HASH_TABLE_EC_Ok);
-    ec = hash_table_insert(ht, env_a, val_a1);
-    EXPECT_EQ_NUM(ec, HASH_TABLE_EC_KeyExists);
-    ec = hash_table_insert(ht, env_b, val_a1);
-    EXPECT_EQ_NUM(ec, HASH_TABLE_EC_Ok);
-
-    ec = hash_table_insert(ht, env_c, val_a1);
-    EXPECT_EQ_NUM(ec, HASH_TABLE_EC_Full);
-    ec = hash_table_insert(ht, NULL, NULL);
-    EXPECT_EQ_NUM(ec, HASH_TABLE_EC_IsNull);
+    HashTableEC ec = HASH_TABLE_EC_Undefined;
+    Coord array[TEST_ARRAY_SIZE] = {};
+    for (size_t i=0; i<TEST_ARRAY_SIZE; ++i) { 
+        Coord key = {.x = (int)i, .y = (int)i};
+        array[i] = key;
+    }
+    array_shuffle(array, TEST_ARRAY_SIZE, sizeof(Coord));
+    for (size_t i=0; i<TEST_ARRAY_SIZE; ++i) {
+        printf("Key: X-%d Y-%d", array[i].x, array[i].y);
+        DataEnvelope* key = envelope(coord_type, &array[i]);
+        DataEnvelope* value = envelope(int_type, &i);
+        ec = hash_table_insert(ht, key, value);
+        EXPECT_EQ_NUM(ec, HASH_TABLE_EC_Ok);
+    }
 
     TEAR_DOWN(
         s_envelope_free_all();
@@ -89,10 +86,11 @@ TEST_F(HashTableInsert) {
 TEST_F(HashTableDelete) {
     const DataType* coord_type = datatype_create(1, cmp_coord, hash_coord, sizeof(Coord));
     const DataType* int_type = datatype_create(2, NULL, NULL, sizeof(int));
-    HashTable* ht = hash_table_init(20, coord_type, int_type);
+    HashTable* ht = hash_table_init(coord_type, int_type);
 
     HashTableEC ec = HASH_TABLE_EC_Ok;
-    for (size_t i=0; i<ht->max_size; ++i) {
+    size_t max_size = ht->max_size;
+    for (size_t i=0; i<max_size; ++i) {
         Coord key = {.x = (int)i, .y = (int)i};
         int val = (int)i;
         DataEnvelope* key_temp = envelope(coord_type, &key);
@@ -112,7 +110,7 @@ TEST_F(HashTableDelete) {
     ec = hash_table_insert(ht, key_env, val_env);
     EXPECT_EQ_NUM(ec, HASH_TABLE_EC_Ok);
 
-    for (size_t i=0; i<ht->max_size; ++i) {
+    for (size_t i=0; i<max_size; ++i) {
         Coord key1 = {.x = (int)i, .y = (int)i};
         DataEnvelope* key_temp = envelope(coord_type, &key1);
         ec = hash_table_delete(ht, key_temp);
@@ -128,19 +126,17 @@ TEST_F(HashTableDelete) {
 }
 
 TEST_F(HashTableFind) {
+    HashTable* ht = NULL;
     const DataType* coord_type = datatype_create(1, cmp_coord, hash_coord, sizeof(Coord));
     const DataType* int_type = datatype_create(2, NULL, NULL, sizeof(int));
-    HashTable* ht = hash_table_init(20, coord_type, int_type);
-    HashTableEC ec = HASH_TABLE_EC_Ok;
+    EXPECT_TRUE(coord_type != NULL);
+    EXPECT_TRUE(int_type != NULL);
 
-    Coord k1 = {.x=1, .y=1};
-    //int v1 = 1;
-    DataEnvelope* key1 = envelope(coord_type, &k1);
-    DataEnvelope* val1 = NULL;
-    ec = hash_table_find(ht, key1, &val1);
-    EXPECT_EQ_NUM(ec, HASH_TABLE_EC_KeyDoesntExists);
+    ht = hash_table_init(coord_type, int_type);
+    EXPECT_TRUE(ht != NULL);
 
-    for (size_t i=0; i<ht->max_size; ++i) {
+    HashTableEC ec = HASH_TABLE_EC_Undefined;
+    for (size_t i=0; i<TEST_ARRAY_SIZE; ++i) { 
         Coord key = {.x = (int)i, .y = (int)i};
         int val = (int)i;
         DataEnvelope* key_temp = envelope(coord_type, &key);
@@ -148,24 +144,24 @@ TEST_F(HashTableFind) {
         ec = hash_table_insert(ht, key_temp, val_temp);
         EXPECT_EQ_NUM(ec, HASH_TABLE_EC_Ok);
     }
-
-    ec = hash_table_find(ht, key1, &val1);
-    EXPECT_EQ_NUM(ec, HASH_TABLE_EC_Ok);
-    EXPECT_EQ_NUM(*(int*)val1->data, 1);
-    ec = hash_table_delete(ht, key1);
-    EXPECT_EQ_NUM(ec, HASH_TABLE_EC_Ok);
-    ec = hash_table_find(ht, key1, &val1);
-    EXPECT_EQ_NUM(ec, HASH_TABLE_EC_KeyDoesntExists);
-    Coord k2 = {.x=2, .y=2};
-    DataEnvelope* key2 = envelope(coord_type, &k2);
-    ec = hash_table_find(ht, key2, &val1);
-    EXPECT_EQ_NUM(ec, HASH_TABLE_EC_Ok);
-    EXPECT_EQ_NUM(*(int*)val1->data, 2);
+    Coord array[TEST_ARRAY_SIZE] = {};
+    for (size_t i=0; i<TEST_ARRAY_SIZE; ++i) { 
+        Coord key = {.x = (int)i, .y = (int)i};
+        array[i] = key;
+    }
+    for (size_t i=0; i<TEST_ARRAY_SIZE; ++i) {
+        printf("Key: X-%d Y-%d", array[i].x, array[i].y);
+        DataEnvelope* key_temp = envelope(coord_type, &array[i]);
+        DataEnvelope* out_val = NULL;
+        ec = hash_table_find(ht, key_temp, &out_val);
+        EXPECT_EQ_NUM(ec, HASH_TABLE_EC_Ok);
+        EXPECT_EQ_NUM(*((int*)out_val->data), i);
+    }
 
     TEAR_DOWN(
-        s_envelope_free_all();
-        datatype_free(coord_type);
-        datatype_free(int_type);
-        hash_table_free(ht);
-    )
+            s_envelope_free_all();
+            datatype_free(coord_type);
+            datatype_free(int_type);
+            hash_table_free(ht);
+            )
 }

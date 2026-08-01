@@ -22,10 +22,11 @@ typedef struct {
     const DataType* value_type;
     KeySpace* ks;
     size_t max_size;
+    size_t current_size;
     size_t q;
 } HashTable;
 
-HashTable* hash_table_init(size_t size, const DataType* key_type, const DataType* value_type);
+HashTable* hash_table_init(const DataType* key_type, const DataType* value_type);
 void hash_table_free(HashTable* ht);
 HashTableEC hash_table_insert(HashTable* ht, DataEnvelope* key, DataEnvelope* val);
 HashTableEC hash_table_delete(HashTable* ht, DataEnvelope* key);
