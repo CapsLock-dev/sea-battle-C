@@ -1,5 +1,7 @@
 add_library(core)
 
+target_link_libraries(core PUBLIC zxcurses)
+
 target_sources(core
 	PRIVATE	
 		src/app.c

@@ -10,6 +10,7 @@ add_subdirectory(libs/hash_table)
 add_subdirectory(libs/tree)
 add_subdirectory(libs/map)
 add_subdirectory(libs/core)
+add_subdirectory(libs/zxcurses)
 
 add_executable(${PROJECT_NAME})
 target_sources(${PROJECT_NAME} PRIVATE ${EXEC_SRCS})
