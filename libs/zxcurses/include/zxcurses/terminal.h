@@ -27,6 +27,8 @@ typedef struct {
 
 void init_view();
 void end_view();
+void clear_terminal();
+void move_cursor(unsigned short int x, unsigned short int y);
 PressedKey read_key(char* letter);
 termsize get_terminal_size();
 

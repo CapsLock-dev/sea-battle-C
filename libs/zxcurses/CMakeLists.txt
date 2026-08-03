@@ -7,6 +7,7 @@ target_sources(zxcurses
 		src/error.c
 		src/screen.c
 		src/terminal.c
+        src/event_listener.c
 	PUBLIC
 		FILE_SET HEADERS
 		BASE_DIRS include
@@ -14,4 +15,5 @@ target_sources(zxcurses
 			include/zxcurses/error.h
 			include/zxcurses/screen.h
 			include/zxcurses/terminal.h
+			include/zxcurses/event_listener.h
 )

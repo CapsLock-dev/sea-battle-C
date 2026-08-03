@@ -1,0 +1,11 @@
+#ifndef CL_ZXCURSES_EVENT_LISTENER_H
+#define CL_ZXCURSES_EVENT_LISTENER_H
+
+bool init_event_listener();
+void main_loop();
+
+void set_on_signal(bool(*handler)(int fd));
+void set_on_stdin(bool(*handler)(int fd));
+void set_on_timer(bool(*handler)(int fd));
+
+#endif

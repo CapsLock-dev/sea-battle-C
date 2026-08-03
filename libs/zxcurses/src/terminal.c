@@ -1,27 +1,22 @@
 #include "zxcurses/terminal.h"
-#include <stdio.h>
-#include <signal.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
-static void sigint_handler(int signum) {
-    end_view();
-    exit(signum);
-}
 static struct termios old_settings;
 static struct termios current_settings;
 
 void init_view() {
-    signal(SIGINT, sigint_handler);
     tcgetattr(STDIN_FILENO, &old_settings);
     current_settings = old_settings;
     current_settings.c_lflag &= ~(unsigned int)(ICANON | ECHO); 
     current_settings.c_cc[VTIME] = 0;
-    current_settings.c_cc[VMIN] = 1;
+    current_settings.c_cc[VMIN] = 0;
 
     tcsetattr(STDIN_FILENO, TCSANOW, &current_settings);
-    printf("\033[?25l");
-    printf("\033[1;1H\033[2J");
-    fflush(stdout);
+
+    write(STDOUT_FILENO, "\033[?25l", 6);
+    atexit(end_view);
 }
 
 PressedKey read_key(char* letter) {
@@ -59,7 +54,16 @@ termsize get_terminal_size() {
 }
 
 void end_view() {
-    printf("\033[?25h");
-    fflush(stdout);
     tcsetattr(0, TCSANOW, &old_settings); 
+    write(STDOUT_FILENO, "\033[?25h", 6);
+}
+
+void clear_terminal() {
+    write(STDOUT_FILENO, "\033[2J", 4);
+}
+
+void move_cursor(unsigned short int x, unsigned short int y) {
+    char buffer[100];
+    sprintf(buffer, "\033[%d;%dH", y, x);
+    write(STDOUT_FILENO, buffer, strlen(buffer));
 }
