@@ -1,14 +1,10 @@
 #include "core/app.h"
 #include "zxcurses/terminal.h"
+#include "zxcurses/screen.h"
 #include "zxcurses/event_listener.h"
 #include <signal.h>
 #include <stdio.h>
 #include <sys/signalfd.h>
-
-void listener() {
-    termsize size = get_terminal_size();
-    printf("Console size: %d %d \n", size.width, size.height);
-}
 
 bool on_stdin(int fd) {
     unsigned char buf[64];
@@ -39,6 +35,8 @@ bool on_signal(int fd) {
         if (si.ssi_signo == SIGINT) {
             return false;
         } else if (si.ssi_signo == SIGWINCH) {
+            termsize size = get_terminal_size();
+            resize_screen_buffer(size.width, size.height);
             write(STDOUT_FILENO, "\033[2J\033[H", 7);
         }
     }
@@ -49,10 +47,10 @@ bool on_timer(int fd) {
     static int timer = 0;
     uint64_t expirations = 0;
     if (read(fd, &expirations, sizeof(expirations)) != sizeof(expirations)) {}
-    clear_terminal();
-    move_cursor(1,1);
-    printf("Timer: %ds\n", timer++);
-    fflush(stdout);
+    char buffer[20] = {};
+    sprintf(buffer, "Timer: %ds", timer++);
+    draw_text(3,2,buffer);
+    print_screen_buffer();
     return true;
 }
 
@@ -64,6 +62,9 @@ int run(int argc, char** argv) {
     set_on_stdin(&on_stdin);
     set_on_signal(&on_signal);
     set_on_timer(&on_timer);
+
+    termsize size = get_terminal_size();
+    create_screen_buffer(size.width, size.height);
 
     main_loop();
 

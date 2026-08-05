@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 
+typedef unsigned short int TermSizeType;
+
 typedef enum {
     KEY_NOTHING,
 
@@ -21,14 +23,14 @@ typedef enum {
 } PressedKey;
 
 typedef struct {
-	unsigned short int width;
-	unsigned short int height;
+	TermSizeType width;
+	TermSizeType height;
 } termsize;
 
 void init_view();
 void end_view();
 void clear_terminal();
-void move_cursor(unsigned short int x, unsigned short int y);
+void move_cursor(TermSizeType x, TermSizeType y);
 PressedKey read_key(char* letter);
 termsize get_terminal_size();
 

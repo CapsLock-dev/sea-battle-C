@@ -51,8 +51,8 @@ bool init_event_listener() {
         return false;
     }
     struct itimerspec timer_spec = {
-        .it_value.tv_nsec = 0, .it_value.tv_sec = 1, 
-        .it_interval.tv_nsec = 0, .it_interval.tv_sec = 1
+        .it_value.tv_nsec = 100000000, .it_value.tv_sec = 0, 
+        .it_interval.tv_nsec = 100000000, .it_interval.tv_sec = 0
     };
     if (timerfd_settime(timer_fd, 0, &timer_spec, NULL) < 0) {
         return false;

@@ -62,7 +62,7 @@ void clear_terminal() {
     write(STDOUT_FILENO, "\033[2J", 4);
 }
 
-void move_cursor(unsigned short int x, unsigned short int y) {
+void move_cursor(TermSizeType x, TermSizeType y) {
     char buffer[100];
     sprintf(buffer, "\033[%d;%dH", y, x);
     write(STDOUT_FILENO, buffer, strlen(buffer));
