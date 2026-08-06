@@ -20,3 +20,7 @@ if (BUILD_TESTING)
     enable_testing()
     add_subdirectory(tests)
 endif(BUILD_TESTING)
+
+if (BUILD_BENCHMARKS) 
+    add_subdirectory(tests/benchmarks)
+endif(BUILD_BENCHMARKS)
