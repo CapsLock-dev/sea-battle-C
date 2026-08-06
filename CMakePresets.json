@@ -75,13 +75,39 @@
                 "CMAKE_BUILD_TYPE": "Release",
                 "BUILD_TESTING": "ON"
             }
+        },
+        {
+            "name": "Hashtable-benchmark",
+            "displayName": "Hashtable-benchmark",
+            "description": "Optimized build with strict warnings and benchmarks, map backed by hash table.",
+            "inherits": ["base"],
+            "cacheVariables": {
+                "MAP_HASHTABLE": "ON",
+                "MAP_TREE": "OFF",
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_BENCHMARKS": "ON"
+            }
+        },
+        {
+            "name": "Tree-benchmark",
+            "displayName": "Tree-benchmark",
+            "description": "Optimized build with strict warnings and benchmarks, map backed by tree.",
+            "inherits": ["base"],
+            "cacheVariables": {
+                "MAP_TREE": "ON",
+                "MAP_HASHTABLE": "OFF",
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_BENCHMARKS": "ON"
+            }
         }
     ],
     "buildPresets": [
         { "name": "Debug-tests-hashtable", "configurePreset": "Debug-tests-hashtable" },
         { "name": "Debug-tests-tree", "configurePreset": "Debug-tests-tree" },
         { "name": "Release-tests-hashtable", "configurePreset": "Release-tests-hashtable" },
-        { "name": "Release-tests-tree", "configurePreset": "Release-tests-tree" }
+        { "name": "Release-tests-tree", "configurePreset": "Release-tests-tree" },
+        { "name": "Hashtable-benchmark", "configurePreset": "Hashtable-benchmark" },
+        { "name": "Tree-benchmark", "configurePreset": "Tree-benchmark" }
     ],
     "testPresets": [
         {
