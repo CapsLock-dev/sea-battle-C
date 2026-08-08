@@ -7,5 +7,6 @@ bool resize_screen_buffer(TermSizeType width, TermSizeType height);
 void print_screen_buffer();
 
 void draw_text(TermSizeType x, TermSizeType y, char* text);
+void set_cell(TermSizeType x, TermSizeType y, char ch);
 
 #endif

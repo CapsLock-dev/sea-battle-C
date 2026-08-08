@@ -17,7 +17,7 @@ static int epoll_add(int fd, unsigned int events) {
     return epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &ev);
 }
 
-bool init_event_listener() {
+bool init_event_listener(void) {
     sigset_t mask;
     sigemptyset(&mask);
     sigaddset(&mask, SIGWINCH);
@@ -51,8 +51,8 @@ bool init_event_listener() {
         return false;
     }
     struct itimerspec timer_spec = {
-        .it_value.tv_nsec = 100000000, .it_value.tv_sec = 0, 
-        .it_interval.tv_nsec = 100000000, .it_interval.tv_sec = 0
+        .it_value.tv_nsec = 0, .it_value.tv_sec = 1, 
+        .it_interval.tv_nsec = 0, .it_interval.tv_sec = 1
     };
     if (timerfd_settime(timer_fd, 0, &timer_spec, NULL) < 0) {
         return false;
@@ -66,6 +66,7 @@ bool init_event_listener() {
 bool (*g_on_signal)(int fd) = NULL;
 bool (*g_on_stdin)(int fd) = NULL;
 bool (*g_on_timer)(int fd) = NULL;
+bool (*g_on_tick)(void) = NULL;
 
 void set_on_signal(bool(*handler)(int fd)) {
     g_on_signal = handler;
@@ -79,9 +80,14 @@ void set_on_timer(bool(*handler)(int fd)) {
     g_on_timer = handler;
 }
 
-void main_loop() {
+void set_on_tick(bool(*handler)(void)) {
+    g_on_tick = handler;
+}
+
+void main_loop(void) {
     bool running = true;
     write(STDOUT_FILENO, "\033[2J\033[H", 7);
+    if (g_on_tick != NULL) g_on_tick();
     while(running) {
         struct epoll_event events[4];
         int ready_fds = epoll_wait(epoll_fd, events, 4, -1);
@@ -96,6 +102,7 @@ void main_loop() {
                 g_on_timer(fd);
             }
         }
+        if (g_on_tick != NULL) g_on_tick();
     }
     close(timer_fd);
     close(signal_fd);

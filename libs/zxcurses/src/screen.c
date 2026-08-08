@@ -36,8 +36,13 @@ void print_screen_buffer() {
 
 void draw_text(TermSizeType x, TermSizeType y, char* text) {
     if (g_height <= y) return;
-    if (g_width <= x+strlen(text)) return;;
+    if (g_width <= x+strlen(text)) return;
     for (TermSizeType i=0; text[i]!='\0'; ++i) {
         g_screen_buffer[g_width*y+x+i] = text[i];
     }
+}
+
+void set_cell(TermSizeType x, TermSizeType y, char ch) {
+    if (x >= g_width || y >= g_height) return;
+    g_screen_buffer[g_width * y + x] = ch;
 }
