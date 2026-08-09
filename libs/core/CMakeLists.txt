@@ -1,6 +1,6 @@
 add_library(core)
 
-target_link_libraries(core PUBLIC zxcurses)
+target_link_libraries(core PUBLIC game)
 
 target_sources(core
 	PRIVATE	
