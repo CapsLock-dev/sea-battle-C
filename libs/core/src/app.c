@@ -27,6 +27,8 @@ bool on_stdin(int fd) {
             default:
                 break;
         }
+        menu_render(&m);
+        print_screen_buffer();
         need_redraw = true;
         break;
     }
@@ -57,9 +59,9 @@ bool on_tick(void) {
     termsize size = get_terminal_size();
     Panel panel = {.x=0,.y=0,.height=size.height,.width=size.width};
     m.panel = panel;
-    panel_draw_box(panel);
+    panel_draw_box(panel, COLOR_DEFAULT, COLOR_DEFAULT);
     menu_render(&m);
-    if (need_redraw) print_screen_buffer();
+    print_screen_buffer();
     need_redraw = false;
     return true;
 }
