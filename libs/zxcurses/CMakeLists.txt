@@ -1,7 +1,5 @@
 add_library(zxcurses)
 
-#target_link_libraries(zxcurses PUBLIC datatype)
-
 target_sources(zxcurses
 	PRIVATE	
 		src/screen.c
@@ -20,6 +18,6 @@ target_sources(zxcurses
 			include/zxcurses/event_listener.h
             include/zxcurses/panel.h
             include/zxcurses/menu.h
-            include/zxcurses/error.c
-            include/zxcurses/color.c
+            include/zxcurses/error.h
+            include/zxcurses/color.h
 )
