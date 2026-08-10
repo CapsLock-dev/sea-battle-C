@@ -7,11 +7,13 @@
 #include <signal.h>
 #include <sys/signalfd.h>
 
-static const char* menu_items[] = {"Singleplayer", "Multiplayer", "Settings", "Quit"};
-static Menu m = {.count=4, .items=menu_items, .selected=0};
-static bool need_redraw = true;
+typedef struct {
+    Menu m;
+    bool need_redraw;
+} app_context;
 
-bool on_stdin(int fd) {
+bool on_stdin(int fd, void* cont) {
+    app_context* ctx = (app_context*)cont;
     for (;;) {
         char letter = 0;
         PressedKey key = read_key(&letter);
@@ -19,23 +21,24 @@ bool on_stdin(int fd) {
         if (key == KEY_EOF) return false;
         switch (key) {
             case KEY_UP:
-                menu_move_selection(&m, 1);
+                menu_move_selection(&ctx->m, 1);
                 break;
             case KEY_DOWN:
-                menu_move_selection(&m, -1);
+                menu_move_selection(&ctx->m, -1);
                 break;
             default:
                 break;
         }
-        menu_render(&m);
+        menu_render(&ctx->m);
         print_screen_buffer();
-        need_redraw = true;
+        ctx->need_redraw = true;
         break;
     }
     return true;
 }
 
-bool on_signal(int fd) {
+bool on_signal(int fd, void* context) {
+    app_context* ctx = (app_context*)context;
     struct signalfd_siginfo si;
     for (;;) {
         ssize_t r = read(fd, &si, sizeof(si));
@@ -49,20 +52,21 @@ bool on_signal(int fd) {
             termsize size = get_terminal_size();
             resize_screen_buffer(size.width, size.height);
             write(STDOUT_FILENO, "\033[2J\033[H", 7);
-            need_redraw = true;
+            ctx->need_redraw = true;
         }
     }
     return true;
 }
 
-bool on_tick(void) {
+bool on_tick(void* context) {
+    app_context* ctx = (app_context*)context;
     termsize size = get_terminal_size();
     Panel panel = {.x=0,.y=0,.height=size.height,.width=size.width};
-    m.panel = panel;
+    ctx->m.panel = panel;
     panel_draw_box(panel, COLOR_DEFAULT, COLOR_DEFAULT);
-    menu_render(&m);
+    menu_render(&ctx->m);
     print_screen_buffer();
-    need_redraw = false;
+    ctx->need_redraw = false;
     return true;
 }
 
@@ -70,6 +74,12 @@ int run(int argc, char** argv) {
     (void)argc; (void)argv;
     init_view();
 
+
+    const char* menu_items[] = {"Singleplayer", "Multiplayer", "Settings", "Quit"};
+    app_context ctx = {        
+        .m = {.count=4, .items=menu_items, .selected=0},
+        .need_redraw = true,
+    };
     init_event_listener();
     set_on_stdin(&on_stdin);
     set_on_signal(&on_signal);
@@ -78,7 +88,7 @@ int run(int argc, char** argv) {
     termsize size = get_terminal_size();
     create_screen_buffer(size.width, size.height);
 
-    main_loop();
+    main_loop(&ctx);
 
     return 0;
 }
