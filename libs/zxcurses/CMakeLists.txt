@@ -9,6 +9,8 @@ target_sources(zxcurses
         src/event_listener.c
         src/panel.c
         src/menu.c
+        src/error.c
+        src/color.c
 	PUBLIC
 		FILE_SET HEADERS
 		BASE_DIRS include
@@ -18,4 +20,6 @@ target_sources(zxcurses
 			include/zxcurses/event_listener.h
             include/zxcurses/panel.h
             include/zxcurses/menu.h
+            include/zxcurses/error.c
+            include/zxcurses/color.c
 )
