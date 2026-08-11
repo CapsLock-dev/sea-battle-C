@@ -9,6 +9,7 @@ target_sources(zxcurses
         src/menu.c
         src/error.c
         src/color.c
+        src/input_widget.c
 	PUBLIC
 		FILE_SET HEADERS
 		BASE_DIRS include
@@ -20,4 +21,5 @@ target_sources(zxcurses
             include/zxcurses/menu.h
             include/zxcurses/error.h
             include/zxcurses/color.h
+            include/zxcurses/input_widget.h
 )

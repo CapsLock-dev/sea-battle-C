@@ -14,7 +14,7 @@ static TermSizeType g_width;
 static TermSizeType g_height;
 
 static void fill_buffer(Cell* buffer, size_t size) {
-    Cell c = {.symbol = '#', .fg=0, .bg=0};
+    Cell c = {.symbol = ' ', .fg=0, .bg=0};
     for (size_t i=0; i<size; ++i) {
         buffer[i] = c;
     }
