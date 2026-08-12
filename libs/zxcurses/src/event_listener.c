@@ -63,31 +63,31 @@ bool init_event_listener(void) {
     return true;
 }
 
-bool (*g_on_signal)(int fd) = NULL;
-bool (*g_on_stdin)(int fd) = NULL;
-bool (*g_on_timer)(int fd) = NULL;
-bool (*g_on_tick)(void) = NULL;
+bool (*g_on_signal)(int fd, void* context) = NULL;
+bool (*g_on_stdin)(int fd, void* context) = NULL;
+bool (*g_on_timer)(int fd, void* context) = NULL;
+bool (*g_on_tick)(void* context) = NULL;
 
-void set_on_signal(bool(*handler)(int fd)) {
+void set_on_signal(bool(*handler)(int fd, void* context)) {
     g_on_signal = handler;
 }
 
-void set_on_stdin(bool(*handler)(int fd)) {
+void set_on_stdin(bool(*handler)(int fd, void* context)) {
     g_on_stdin = handler;
 }
 
-void set_on_timer(bool(*handler)(int fd)) {
+void set_on_timer(bool(*handler)(int fd, void* context)) {
     g_on_timer = handler;
 }
 
-void set_on_tick(bool(*handler)(void)) {
+void set_on_tick(bool(*handler)(void* context)) {
     g_on_tick = handler;
 }
 
-void main_loop(void) {
+void main_loop(void* context) {
     bool running = true;
     write(STDOUT_FILENO, "\033[2J\033[H", 7);
-    if (g_on_tick != NULL) g_on_tick();
+    if (g_on_tick != NULL) g_on_tick(context);
     while(running) {
         struct epoll_event events[4];
         int ready_fds = epoll_wait(epoll_fd, events, 4, -1);
@@ -95,14 +95,14 @@ void main_loop(void) {
         for (int i=0; i<ready_fds; ++i) {
             int fd = events[i].data.fd;
             if (fd == STDIN_FILENO && g_on_stdin != NULL) {
-                running = g_on_stdin(fd);
+                running = g_on_stdin(fd, context);
             } else if (fd == signal_fd && g_on_signal != NULL) {
-                running = g_on_signal(fd);
+                running = g_on_signal(fd, context);
             } else if (fd == timer_fd && g_on_timer != NULL) {
-                g_on_timer(fd);
+                g_on_timer(fd, context);
             }
         }
-        if (g_on_tick != NULL) g_on_tick();
+        if (g_on_tick != NULL) g_on_tick(context);
     }
     close(timer_fd);
     close(signal_fd);

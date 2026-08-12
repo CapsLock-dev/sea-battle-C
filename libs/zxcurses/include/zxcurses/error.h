@@ -6,6 +6,7 @@ typedef enum {
     TUI_EC_AllocationError,
     TUI_EC_OutOfBounds,
     TUI_EC_TerminalTooSmall,
+    TUI_EC_IsNull,
     TUI_EC_Ok,
 } TUIError;
 
