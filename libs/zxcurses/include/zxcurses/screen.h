@@ -6,6 +6,7 @@
 
 TUIError create_screen_buffer(TermSizeType width, TermSizeType height);
 TUIError resize_screen_buffer(TermSizeType width, TermSizeType height);
+void clear_screen_buffer();
 void print_screen_buffer();
 
 TUIError draw_text(TermSizeType x, TermSizeType y, char* text, Color fg, Color bg);

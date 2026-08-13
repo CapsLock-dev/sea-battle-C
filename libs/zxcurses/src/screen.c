@@ -39,6 +39,10 @@ TUIError resize_screen_buffer(TermSizeType width, TermSizeType height) {
     return TUI_EC_Ok;
 }
 
+void clear_screen_buffer() {
+    fill_buffer(g_screen_buffer, g_height*g_width);
+}
+
 void print_screen_buffer() {
     for (TermSizeType i=0; i<g_height; ++i) {
         for (TermSizeType j=0; j<g_width; ++j) {

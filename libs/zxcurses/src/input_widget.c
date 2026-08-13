@@ -11,7 +11,7 @@ InputWidget* input_widget_init(Panel panel) {
 
 TUIError input_widget_add_entry(InputWidget* widget, const char* label, size_t limit, char* base_value) {
     if (widget == NULL) return TUI_EC_IsNull;
-    if (strlen(base_value) >= limit) return TUI_EC_OutOfBounds;
+    if (strlen(base_value) > limit) return TUI_EC_OutOfBounds;
 
     InputEntry* temp = realloc(widget->entries, sizeof(InputEntry)*(widget->curr_entries+1));
     if (temp == NULL) return TUI_EC_AllocationError;

@@ -1,6 +1,0 @@
-#ifndef CL_GAME_SCENE_CONTROLLER_H
-#define CL_GAME_SCENE_CONTROLLER_H
-
-
-
-#endif
