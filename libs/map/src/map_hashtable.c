@@ -9,7 +9,7 @@ struct Map {
     HashTable* table;
 };
 
-Map* map_init(size_t size) {
+Map* map_init() {
     Map* map = malloc(sizeof(Map));
     if (map == NULL) return NULL;
 
