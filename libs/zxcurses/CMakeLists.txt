@@ -22,4 +22,5 @@ target_sources(zxcurses
             include/zxcurses/error.h
             include/zxcurses/color.h
             include/zxcurses/input_widget.h
+            include/zxcurses/types.h
 )

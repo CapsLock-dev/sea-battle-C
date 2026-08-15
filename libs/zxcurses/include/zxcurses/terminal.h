@@ -3,8 +3,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
-
-typedef unsigned short int TermSizeType;
+#include "zxcurses/types.h"
 
 typedef enum {
     KEY_NOTHING,
