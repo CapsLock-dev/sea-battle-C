@@ -1,8 +1,7 @@
 #ifndef CL_GAME_SETTINGS_SCENE_H
 #define CL_GAME_SETTINGS_SCENE_H
-
-#include "zxcurses/terminal.h"
 #include "zxcurses/error.h"
+#include "zxcurses/types.h"
 
 typedef struct {
     TermSizeType width;

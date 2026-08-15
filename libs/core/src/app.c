@@ -1,3 +1,4 @@
+#include "game/game.h"
 #include "zxcurses/screen.h"
 #include "core/app.h"
 #include "game/main_menu_scene.h"
@@ -22,7 +23,7 @@ int run(int argc, char** argv) {
         .single_ship_count = DEFAULT_SINGLE_SHIP,
         .duo_ship_count = DEFAULT_DUO_SHIP,
         .triple_ship_count = DEFAULT_TRIPLE_SHIP,
-        .quadriple_ship_count = DEFAULT_QUADRIPLE_SHIP,
+        .quadriple_ship_count = DEFAULT_QUADRIPLE_SHIP
     };   
     create_screen_buffer(size.width, size.height);
     TUIError ec = TUI_EC_Ok;
@@ -31,7 +32,7 @@ int run(int argc, char** argv) {
         MainMenuOption main_menu_opt = start_main_menu_scene();
         switch (main_menu_opt) {
             case MAIN_MENU_OPTION_SINGLEPLAYER:
-
+                start_game(settings);
                 break;
             case MAIN_MENU_OPTION_MULTIPLAYER: 
 
