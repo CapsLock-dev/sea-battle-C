@@ -25,7 +25,7 @@ PressedKey read_key(char* letter) {
     if (c == 0x04) return KEY_EOF;
     if (c == '\n') return KEY_ENTER;
     if (c == 0x7f) return KEY_BACKSPACE;
-    if (c == 0x57) return KEY_SPACE;
+    if (c == ' ') return KEY_SPACE;
     if (c == 0x1B) {
         char code[2];
         ssize_t bytes = read(STDIN_FILENO, &code, 2);
