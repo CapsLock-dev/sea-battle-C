@@ -1,6 +1,42 @@
 #include "game/battlefield.h"
 #include <stdlib.h>
 
+static bool can_be_placed(BattleField* bf, TermSizeType x, TermSizeType y, bool is_horizontal, ShipType type) {
+    TermSizeType width = bf->width;
+    TermSizeType height = bf->height;
+    TermSizeType size = (TermSizeType)type + 1;
+    if (x + size*is_horizontal > width || y + size*(!is_horizontal) > height) return false;
+    for (TermSizeType i = 0; i < size; ++i) {
+        TermSizeType cx = x + i*is_horizontal;
+        TermSizeType cy = y + i*(!is_horizontal);
+        if (bf_get_cell(bf, cx, cy) != CELL_TYPE_EMPTY) return false;
+    }
+    return true;
+}
+
+static void mark_radius(BattleField* bf, TermSizeType x, TermSizeType y, bool is_horizontal, ShipType type) {
+    TermSizeType size = (TermSizeType)type + 1;
+    TermSizeType x0 = (x > 0) ? x - 1 : 0;
+    TermSizeType y0 = (y > 0) ? y - 1 : 0;
+    TermSizeType x1 = is_horizontal ? x + size : x + 1;
+    TermSizeType y1 = is_horizontal ? y + 1 : y + size;
+    x1 = (x1 < bf->width) ? x1 + 1 : bf->width;
+    y1 = (y1 < bf->height) ? y1 + 1 : bf->height;
+
+    for (TermSizeType cy = y0; cy < y1; ++cy) {
+        for (TermSizeType cx = x0; cx < x1; ++cx) {
+            bool on_ship = is_horizontal
+                ? (cy == y && cx >= x && cx < x + size)
+                : (cx == x && cy >= y && cy < y + size);
+            if (on_ship) continue;
+
+            int* existing = NULL;
+            if (map_find(bf->field, (Coord){.x=cx, .y=cy}, &existing) == MAP_ERR_Ok) continue;
+            map_insert(bf->field, (Coord){.x=cx, .y=cy}, 1);
+        }
+    }
+}
+
 BattleField* bf_init(GameSettings* settings) {
     BattleField* bf = malloc(sizeof(BattleField));
     if (bf == NULL) return NULL;
@@ -10,32 +46,100 @@ BattleField* bf_init(GameSettings* settings) {
     bf->height = settings->height;
     unsigned int all_ship_count = settings->single_ship_count+settings->duo_ship_count+settings->triple_ship_count+settings->quadriple_ship_count;
     bf->ships = calloc(all_ship_count, sizeof(Ship));
-    bf->ships_left = all_ship_count;
+    bf->ships_left = 0;
+    bf->id_counter = 2;
     if (bf->ships == NULL) {free(bf->field); free(bf); return NULL;}
 
     return bf;
 }
 
-bool bf_place_ship(BattleField* bf, TermSizeType x, TermSizeType y, bool is_horizontal, ShipType type) {
-    TermSizeType ship_size = (TermSizeType)type+1;
-    TermSizeType x_len = 1;
-    TermSizeType y_len = 1;
-    if (is_horizontal) x_len = ship_size;
-    if (!is_horizontal) y_len = ship_size;
-    if (x+x_len > bf->width || y+y_len > bf->height) return false;
-
-    return true;
+BattleField* bf_init_random(GameSettings* settings) {
+    BattleField* bf = bf_init(settings);
+    if (bf == NULL) return NULL;
+ 
+    ShipType types[4] = {SHIP_TYPE_QUADRIPLE, SHIP_TYPE_TRIPLE, SHIP_TYPE_DOUBLE, SHIP_TYPE_SIGNLE};
+    unsigned int counts[4] = {
+        settings->quadriple_ship_count,
+        settings->triple_ship_count,
+        settings->duo_ship_count,
+        settings->single_ship_count,
+    };
+ 
+    const int max_attempts_per_ship = 10000;
+ 
+    for (int t = 0; t < 4; ++t) {
+        for (unsigned int i = 0; i < counts[t]; ++i) {
+            GameEC ec = GAME_EC_CantPlaceHere;
+            int attempts = 0;
+            while (ec != GAME_EC_Ok) {
+                if (attempts++ >= max_attempts_per_ship) {
+                    bf_free(bf);
+                    return NULL;
+                }
+                bool is_horizontal = rand() % 2;
+                TermSizeType x = (TermSizeType)(rand() % bf->width);
+                TermSizeType y = (TermSizeType)(rand() % bf->height); 
+                ec = bf_place_ship(bf, x, y, is_horizontal, types[t]);
+                if (ec == GAME_EC_InternalMapError || ec == GAME_EC_AllocationError) {
+                    bf_free(bf);
+                    return NULL;
+                }
+            }
+        }
+    }
+ 
+    return bf;
 }
 
-bool bf_shot(BattleField* bf, TermSizeType x, TermSizeType y) {
+GameEC bf_place_ship(BattleField* bf, TermSizeType x, TermSizeType y, bool is_horizontal, ShipType type) {
+    if (!can_be_placed(bf, x, y, is_horizontal, type)) return GAME_EC_CantPlaceHere;
+    Ship ship = {.id = bf->id_counter, .current_size=type+1, .max_size=type+1};
+    MapEC ec = MAP_ERR_Ok;
+    for (TermSizeType i=0; i<type+1; ++i) {
+        TermSizeType cx = x+i*is_horizontal;
+        TermSizeType cy = y+i*(!is_horizontal);
+        ec = map_insert(bf->field, (Coord){.x=cx,.y=cy}, ship.id);
+        if (ec != MAP_ERR_Ok) return GAME_EC_InternalMapError;
+    }
+    mark_radius(bf, x, y, is_horizontal, type);
+    bf->ships[bf->ships_left++] = ship;
+    ++bf->id_counter;
+
+    return GAME_EC_Ok;
+}
+
+GameEC bf_shot(BattleField* bf, TermSizeType x, TermSizeType y, bool* is_hit) {
+    if (x >= bf->width || y >= bf->height) return GAME_EC_CantPlaceHere;
+    *is_hit = false;
+    int* value = NULL;
+    MapEC ec = map_find(bf->field, (Coord){.x=x,.y=y}, &value);
+    if (ec == MAP_ERR_KeyDoesntExists) {
+        ec = map_insert(bf->field, (Coord){.x=x,.y=y}, 0);
+        if (ec != MAP_ERR_Ok) return GAME_EC_InternalMapError;
+    } else {
+        if (*value <= 1) return GAME_EC_CantPlaceHere;
+        if (*value > 1) {
+            *value = (*value) * -1;
+            *is_hit = true;
+        }
+    }
+    return GAME_EC_Ok;
 }
 
 CellType bf_get_cell(BattleField* bf, TermSizeType x, TermSizeType y) {
     Map* m = bf->field;
-    int* value = 0;
+    int* value = NULL;
     MapEC ec = map_find(m, (Coord){.x=x,.y=y}, &value);
     if (ec == MAP_ERR_KeyDoesntExists) return CELL_TYPE_EMPTY;
-    if (ec != MAP_ERR_Ok) return CELL_TYPE_ERROR;
+    if (*value > 1) {
+        return CELL_TYPE_SHIP;
+    } else if (*value < 0) {
+        return CELL_TYPE_HIT;
+    } else if (*value == 1) {
+        return CELL_TYPE_RADIUS;
+    } else {
+        return CELL_TYPE_MISS;
+    }
 }
 
 void bf_free(BattleField* bf) {

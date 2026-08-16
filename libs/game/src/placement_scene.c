@@ -2,7 +2,6 @@
 #include <sys/signalfd.h>
 #include <stdio.h>
 #include <string.h>
-#include <wchar.h>
 #include "game/placement_scene.h"
 #include "game/battlefield.h"
 #include "zxcurses/panel.h"
@@ -10,6 +9,8 @@
 #include "zxcurses/event_listener.h"
 
 typedef struct {
+    bool placement_finished;
+    bool critical_error;
     bool need_redraw;
     GameSettings settings;
     Panel panel;
@@ -23,8 +24,11 @@ typedef struct {
 
     bool placing_mode;
     ShipType curr_ship_type;
+    TermSizeType curr_ship_count;
+
     bool is_horizontal;
     BattleField* field;
+    bool placing_redraw;
 
     char* last_error;
 } app_context;
@@ -42,27 +46,16 @@ static Panel resize_main_panel() {
     return panel;
 }
 
-static TermSizeType get_ship_count(const app_context* ctx, ShipType type) {
-    switch (type) {
-        case SHIP_TYPE_SIGNLE:
-            return ctx->settings.single_ship_count;
-        case SHIP_TYPE_DOUBLE:
-            return ctx->settings.duo_ship_count;
-        case SHIP_TYPE_TRIPLE:
-            return ctx->settings.triple_ship_count;
-        case SHIP_TYPE_QUADRIPLE:
-            return ctx->settings.quadriple_ship_count;
-    }
-}
-
-static void draw_battlefield_cell(const app_context* ctx, TermSizeType x, TermSizeType y) {
+static void draw_battlefield_cell(app_context* ctx, TermSizeType x, TermSizeType y) {
+    if (x >= ctx->field->width || y >= ctx->field->height) return;
     CellType ct = bf_get_cell(ctx->field, x, y);
     Color fg = COLOR_DEFAULT;
     Color bg = COLOR_DEFAULT;
     char c = ' ';
     switch (ct) {
+        case CELL_TYPE_RADIUS:
         case CELL_TYPE_EMPTY:
-            c = ' ';
+            c = '#';
             break;
         case CELL_TYPE_HIT:
             c = 'X';
@@ -75,26 +68,24 @@ static void draw_battlefield_cell(const app_context* ctx, TermSizeType x, TermSi
             break;
     }
     panel_put_char(ctx->panel, x*2+1, y+1, c, fg, bg);
+    panel_put_char(ctx->panel, x*2+1+1, y+1, ' ', COLOR_DEFAULT, COLOR_DEFAULT);
 }
 
-static void full_redraw(const app_context* ctx) {
-    for (TermSizeType y = 1; y < ctx->panel.height - 1; ++y) {
-        for (TermSizeType x = 1; x < ctx->panel.width - 1; x += 2) {
-            int game_col = (x - 1) / 2;
-            int game_row = y - 1; 
-            if (game_row == ctx->cursor_y && game_col == ctx->cursor_x) {
-                panel_put_char(ctx->panel, x, y, '@', COLOR_BLACK, COLOR_WHITE);
-            } else {
-                panel_put_char(ctx->panel, x, y, '#', COLOR_CYAN, COLOR_DEFAULT);
-                panel_put_char(ctx->panel, x+1, y, ' ', COLOR_DEFAULT, COLOR_DEFAULT);
-            }
-        }
-    }
+static void draw_ship_count(app_context* ctx) {
     char buff[50];
     snprintf(buff, sizeof(buff), "Current ship size: %u", ctx->curr_ship_type+1);
     panel_draw_text(ctx->main_panel, 1,1, buff, COLOR_DEFAULT, COLOR_DEFAULT);
-    snprintf(buff, sizeof(buff), "Ship count: %u", get_ship_count(ctx, ctx->curr_ship_type));
+    snprintf(buff, sizeof(buff), "Ship count: %u", ctx->curr_ship_count);
     panel_draw_text(ctx->main_panel, 1,2, buff, COLOR_DEFAULT, COLOR_DEFAULT);
+}
+
+static void full_redraw(app_context* ctx) {
+    for (TermSizeType x=0; x<ctx->field->width; ++x) {
+        for (TermSizeType y=0; y<ctx->field->height; ++y) {
+            draw_battlefield_cell(ctx, x, y);
+        }
+    }
+    draw_ship_count(ctx);
     panel_draw_text(ctx->main_panel, 1,3, "Press ARROW KEYS to move", COLOR_DEFAULT, COLOR_DEFAULT);
     panel_draw_text(ctx->main_panel, 1,4, "Press ENTER to preview placing, press second time to place", COLOR_DEFAULT, COLOR_DEFAULT);
     panel_draw_text(ctx->main_panel, 1,5, "Press BACKSPACE to leave preview mode", COLOR_DEFAULT, COLOR_DEFAULT);
@@ -102,24 +93,65 @@ static void full_redraw(const app_context* ctx) {
     panel_draw_box(ctx->panel, COLOR_DEFAULT, COLOR_DEFAULT);
 }
 
-static void draw_placing_mode(const app_context* ctx) {
-    if (ctx->placing_mode) {
-        TermSizeType origin_row = ctx->cursor_y;
-        TermSizeType origin_col = ctx->cursor_x;
-        for (TermSizeType i=0; i<ctx->curr_ship_type+1; ++i) {
-            TermSizeType seg_row = origin_row;
-            TermSizeType seg_col = origin_col;
-            if (ctx->is_horizontal) {
-                seg_col += i;
-            } else {
-                seg_row += i;
-            }
-            TermSizeType panel_x = 1 + (seg_col * 2);
-            TermSizeType panel_y = 1 + seg_row;
+static void draw_placing_mode(app_context* ctx) {
+    TermSizeType cur_y = ctx->cursor_y;
+    TermSizeType cur_x = ctx->cursor_x;
+    for (TermSizeType i=0; i<ctx->curr_ship_type+1; ++i) {
+        TermSizeType field_x = cur_x;
+        TermSizeType field_y = cur_y;
+        if (ctx->is_horizontal) {
+            field_x += i; 
+        } else {
+            field_y += i;
+        }
+        TermSizeType panel_x = field_x*2+1;
+        TermSizeType panel_y = field_y+1;
+        if (ctx->is_horizontal) {
+            if (i != 0) draw_battlefield_cell(ctx, (cur_x), (cur_y+i)); 
+        } else {
+            if (i != 0) draw_battlefield_cell(ctx, (cur_x+i), cur_y); 
+        }
+        if (ctx->placing_mode && panel_x+1 < ctx->panel.width && panel_y+1 < ctx->panel.height) {
             panel_put_char(ctx->panel, panel_x, panel_y, '@', COLOR_BLACK, COLOR_WHITE);
             panel_put_char(ctx->panel, panel_x+1, panel_y, ' ', COLOR_DEFAULT, COLOR_DEFAULT);
+        } else {
+            if (i != 0) {
+                draw_battlefield_cell(ctx, (cur_x+i), cur_y); 
+                draw_battlefield_cell(ctx, (cur_x), (cur_y+i)); 
+            }
         }
     }
+}
+
+static bool after_place_ship(app_context* ctx) {
+    for (TermSizeType i=0; i<ctx->curr_ship_type+1; ++i) {
+        TermSizeType cx = ctx->cursor_x+i*ctx->is_horizontal;
+        TermSizeType cy = ctx->cursor_y+i*(!ctx->is_horizontal);
+        draw_battlefield_cell(ctx, cx, cy);
+    }
+    --(ctx->curr_ship_count);
+    if (ctx->curr_ship_count == 0) {
+        switch (ctx->curr_ship_type) {
+            case SHIP_TYPE_SIGNLE:
+                ctx->placement_finished = true;
+                return false;
+                break;
+            case SHIP_TYPE_DOUBLE:
+                ctx->curr_ship_type = SHIP_TYPE_SIGNLE;
+                ctx->curr_ship_count = ctx->settings.single_ship_count;
+                break;
+            case SHIP_TYPE_TRIPLE:
+                ctx->curr_ship_type = SHIP_TYPE_DOUBLE;
+                ctx->curr_ship_count = ctx->settings.duo_ship_count;
+                break;
+            case SHIP_TYPE_QUADRIPLE:
+                ctx->curr_ship_type = SHIP_TYPE_TRIPLE;
+                ctx->curr_ship_count = ctx->settings.triple_ship_count;
+                break;
+        }
+    }
+    draw_ship_count(ctx);
+    return true;
 }
 
 bool on_stdin_placement(int fd, void* cont) {
@@ -134,6 +166,7 @@ bool on_stdin_placement(int fd, void* cont) {
             case KEY_UP:
                 if (ctx->placing_mode) break;
                 if (ctx->cursor_y > 0) {
+                    ctx->prev_cursor_x = ctx->cursor_x;
                     ctx->prev_cursor_y = ctx->cursor_y;
                     ctx->cursor_y--;
                 }
@@ -142,6 +175,7 @@ bool on_stdin_placement(int fd, void* cont) {
             case KEY_DOWN:
                 if (ctx->placing_mode) break;
                 if (ctx->cursor_y < ctx->settings.height - 1) {
+                    ctx->prev_cursor_x = ctx->cursor_x;
                     ctx->prev_cursor_y = ctx->cursor_y;
                     ctx->cursor_y++;
                 }
@@ -151,6 +185,7 @@ bool on_stdin_placement(int fd, void* cont) {
                 if (ctx->placing_mode) break;
                 if (ctx->cursor_x > 0){
                     ctx->prev_cursor_x = ctx->cursor_x;
+                    ctx->prev_cursor_y = ctx->cursor_y;
                     ctx->cursor_x--;
                 }
                 ctx->cursor_redraw = true;
@@ -159,25 +194,37 @@ bool on_stdin_placement(int fd, void* cont) {
                 if (ctx->placing_mode) break;
                 if (ctx->cursor_x < ctx->settings.width - 1) {
                     ctx->prev_cursor_x = ctx->cursor_x;
+                    ctx->prev_cursor_y = ctx->cursor_y;
                     ctx->cursor_x++;
                 }
                 ctx->cursor_redraw = true;
                 break;
             case KEY_ENTER:
                 if (ctx->placing_mode) {
-                    bool res = bf_place_ship(ctx->field, ctx->cursor_x, ctx->cursor_y, ctx->is_horizontal, ctx->curr_ship_type);
-                    if (!res) {
+                    GameEC res = bf_place_ship(ctx->field, ctx->cursor_x, ctx->cursor_y, ctx->is_horizontal, ctx->curr_ship_type);
+                    if (res != GAME_EC_Ok) {
+                        if (res == GAME_EC_InternalMapError || res == GAME_EC_AllocationError) {ctx->critical_error = true; return false;}
                         ctx->last_error = "Can't place ship here";
+                    } else {
+                        ctx->placing_mode = false;
+                        ctx->placing_redraw = true;
+                        ctx->need_redraw = true;
+                        return after_place_ship(ctx);
                     }
                 }
                 ctx->placing_mode = true;
+                ctx->placing_redraw = true;
                 break;
             case KEY_BACKSPACE:
+                ctx->placing_redraw = true;
                 ctx->placing_mode = false;
                 ctx->last_error = NULL;
                 break;
             case KEY_SPACE:
-                ctx->is_horizontal = !ctx->is_horizontal;
+                if (ctx->placing_mode) {
+                    ctx->placing_redraw = true;
+                    ctx->is_horizontal = !ctx->is_horizontal;
+                }
                 break;
             default:
                 break;
@@ -206,6 +253,7 @@ bool on_signal_placement(int fd, void* context) {
             ctx->panel = resize_panel(ctx->settings);
             ctx->main_panel = resize_main_panel();
             full_redraw(ctx);
+            ctx->cursor_redraw = true;
             ctx->need_redraw = true;
         }
     }
@@ -217,19 +265,23 @@ bool on_tick_placement(void* context) {
     panel_draw_box(ctx->main_panel, COLOR_DEFAULT, COLOR_DEFAULT);
     if(ctx->last_error != NULL) panel_draw_text(ctx->main_panel, (ctx->main_panel.width-strlen(ctx->last_error))/2, 0, ctx->last_error, COLOR_RED, COLOR_DEFAULT);
     if (ctx->cursor_redraw) {
-        draw_battlefield_cell(ctx, ctx->prev_cursor_x, ctx->prev_cursor_x);
-        panel_put_char(ctx->panel, ctx->cursor_x*2+1, ctx->cursor_y+1, '@', COLOR_DEFAULT, COLOR_DEFAULT);
+        draw_battlefield_cell(ctx, ctx->prev_cursor_x, ctx->prev_cursor_y);
+        panel_put_char(ctx->panel, ctx->cursor_x*2+1, ctx->cursor_y+1, '@', COLOR_BLACK, COLOR_WHITE);
         ctx->cursor_redraw = false;
+    }
+    if (ctx->placing_redraw) {
+        draw_placing_mode(ctx);
+        ctx->placing_redraw = false;
     }
     if (ctx->need_redraw) print_screen_buffer();
     ctx->need_redraw = false;
     return true;
 }
 
-TUIError start_placement_screen(GameSettings settings, BattleField* field) {
+GameEC start_placement_screen(GameSettings settings, BattleField* field) {
     clear_screen_buffer();
     init_event_listener();
-    TUIError ec = TUI_EC_Ok;
+    GameEC ec = GAME_EC_Ok;
     (void)ec;
 
     app_context ctx = {        
@@ -242,19 +294,27 @@ TUIError start_placement_screen(GameSettings settings, BattleField* field) {
         .cursor_y = 0,
         .placing_mode = false,
         .is_horizontal = false,
+        .cursor_redraw = true,
+        .placing_redraw = false,
+        .placement_finished = false,
+        .critical_error = false,
     };
     
     if (settings.quadriple_ship_count > 0) {
         ctx.curr_ship_type = SHIP_TYPE_QUADRIPLE;
+        ctx.curr_ship_count = settings.quadriple_ship_count;
     } else if (settings.triple_ship_count > 0) {
         ctx.curr_ship_type = SHIP_TYPE_TRIPLE;
+        ctx.curr_ship_count = settings.triple_ship_count;
     } else if (settings.duo_ship_count > 0) {
         ctx.curr_ship_type = SHIP_TYPE_DOUBLE;
+        ctx.curr_ship_count = settings.duo_ship_count;
     } else if (settings.single_ship_count > 0) {
         ctx.curr_ship_type = SHIP_TYPE_SIGNLE;
+        ctx.curr_ship_count = settings.single_ship_count;
     } else {
         // Should be impossible, settings_screen requires non zero values
-        return TUI_EC_Ok; 
+        return GAME_EC_Ok; 
     }
 
     set_on_stdin(&on_stdin_placement);
@@ -263,7 +323,10 @@ TUIError start_placement_screen(GameSettings settings, BattleField* field) {
 
     full_redraw(&ctx);
     main_loop(&ctx);
+    
+    if (ctx.placement_finished) return GAME_EC_PlacementFinished;
+    if (ctx.critical_error) return GAME_EC_InternalMapError;
 
-    return TUI_EC_Ok;
+    return GAME_EC_Ok;
 }
 

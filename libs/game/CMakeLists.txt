@@ -8,6 +8,7 @@ target_sources(game
         src/main_menu_scene.c
         src/settings_scene.c
         src/placement_scene.c
+        src/battle_scene.c
         src/battlefield.c
 	PUBLIC
 		FILE_SET HEADERS
@@ -17,5 +18,6 @@ target_sources(game
             include/game/main_menu_scene.h
             include/game/settings_scene.h
             include/game/placement_scene.h
+            include/game/battle_scene.h
             include/game/battlefield.h
 )

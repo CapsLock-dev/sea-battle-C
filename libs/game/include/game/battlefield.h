@@ -3,6 +3,7 @@
 #include "map/map.h"
 #include "zxcurses/types.h"
 #include "game/settings_scene.h"
+#include "game/error.h"
 
 typedef struct {
     int id;
@@ -11,11 +12,12 @@ typedef struct {
 } Ship;
 
 typedef struct {
-    Map* field; // value = 0 miss, value > 0 ship_id, value < 0 sunken ship_id, not found = water
+    Map* field; // value = 0 miss, value = 1 ship radius, value > 1 ship_id, value < 0 sunken ship_id, not found = water
     Ship* ships;
     TermSizeType width;
     TermSizeType height;
     unsigned int ships_left;
+    int id_counter;
 } BattleField;
 
 typedef enum {
@@ -26,17 +28,17 @@ typedef enum {
 } ShipType;
 
 typedef enum {
-    CELL_TYPE_ERROR,
     CELL_TYPE_EMPTY,
     CELL_TYPE_SHIP,
+    CELL_TYPE_RADIUS,
     CELL_TYPE_MISS,
     CELL_TYPE_HIT,
 } CellType;
 
 BattleField* bf_init(GameSettings* settings);
 
-bool bf_place_ship(BattleField* bf, TermSizeType x, TermSizeType y, bool is_horizontal, ShipType type);
-bool bf_shot(BattleField* bf, TermSizeType x, TermSizeType y);
+GameEC bf_place_ship(BattleField* bf, TermSizeType x, TermSizeType y, bool is_horizontal, ShipType type);
+GameEC bf_shot(BattleField* bf, TermSizeType x, TermSizeType y, bool* is_hit);
 
 CellType bf_get_cell(BattleField* bf, TermSizeType x, TermSizeType y);
 void bf_free(BattleField* bf);

@@ -26,28 +26,34 @@ int run(int argc, char** argv) {
         .quadriple_ship_count = DEFAULT_QUADRIPLE_SHIP
     };   
     create_screen_buffer(size.width, size.height);
-    TUIError ec = TUI_EC_Ok;
+    TUIError tui_ec = TUI_EC_Ok;
+    GameEC game_ec = GAME_EC_Ok;
     char* err_msg = 0;
     while (running) {
         MainMenuOption main_menu_opt = start_main_menu_scene();
         switch (main_menu_opt) {
             case MAIN_MENU_OPTION_SINGLEPLAYER:
-                start_game(settings);
+                game_ec = start_singleplayer_game(settings);
+                if (game_ec != GAME_EC_Ok) running = false;
                 break;
             case MAIN_MENU_OPTION_MULTIPLAYER: 
-
+                game_ec = start_multiplayer_game(settings);
+                if (game_ec != GAME_EC_Ok) running = false;
                 break;
             case MAIN_MENU_OPTION_SETTINGS:
-                ec = start_settings_screen(&settings, &err_msg);
-                if (ec != TUI_EC_Ok) running = false;
+                tui_ec = start_settings_screen(&settings, &err_msg);
+                if (tui_ec != TUI_EC_Ok) running = false;
                 break;
             case MAIN_MENU_OPTION_QUIT: 
                 running = false;
                 break;
         }
     }
-    if (ec != TUI_EC_Ok) {
-        printf("Error: %s ; code=%d", err_msg, ec);
+    if (tui_ec != TUI_EC_Ok) {
+        printf("Settings error: %s ; code=%d", err_msg, tui_ec);
+    }
+    if (game_ec != GAME_EC_Ok) {
+        printf("Game error: code=%d", game_ec);
     }
     return 0;
 }
