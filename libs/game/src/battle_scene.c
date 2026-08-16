@@ -33,9 +33,10 @@ typedef struct {
     TermSizeType board_width;
     TermSizeType board_height;
 
-    bool shot_redraw;
-
     char* last_error;
+
+    PlayerNum turn;
+    PlayerNum winner;
 } app_context;
 
 static void resize_panels(app_context* ctx) {
@@ -66,6 +67,16 @@ static Panel resize_main_panel() {
     return panel;
 }
 
+static void draw_win_message(app_context* ctx) {
+    char buff[64];
+    int winner_num = (ctx->winner == PlayerNum_PLAYER_ONE) ? 1 : 2;
+    snprintf(buff, sizeof(buff), "Player %d win! Press any key to exit", winner_num);
+    TermSizeType text_len = (TermSizeType)strlen(buff);
+    TermSizeType text_x = (ctx->main_panel.width > text_len) ? (ctx->main_panel.width - text_len) / 2 : 0;
+    TermSizeType text_y = ctx->main_panel.height / 2;
+    panel_draw_text(ctx->main_panel, text_x, text_y, buff, COLOR_GREEN, COLOR_DEFAULT);
+}
+
 static void draw_battlefield_cell(app_context* ctx, PlayerNum player_num, TermSizeType x, TermSizeType y) {
     if (x >= ctx->board_width || y >= ctx->board_height) return;
     Panel* panel = NULL;
@@ -82,25 +93,29 @@ static void draw_battlefield_cell(app_context* ctx, PlayerNum player_num, TermSi
     Color bg = COLOR_DEFAULT;
     char c = ' ';
     switch (ct) {
+        case CELL_TYPE_SHIP:
         case CELL_TYPE_RADIUS:
         case CELL_TYPE_EMPTY:
             c = '#';
             break;
         case CELL_TYPE_HIT:
             c = 'X';
+            fg = COLOR_RED;
             break;
         case CELL_TYPE_MISS:
             c = 'O';
             break;
-        case CELL_TYPE_SHIP:
-            c = '@';
-            break;
+       // case CELL_TYPE_SHIP:
+       //     c = '@';
+       //     fg = COLOR_GREEN;
+       //     break;
     }
     panel_put_char(*panel, x*2+1, y+1, c, fg, bg);
     panel_put_char(*panel, x*2+1+1, y+1, ' ', COLOR_DEFAULT, COLOR_DEFAULT);
 }
 
 static void full_redraw(app_context* ctx) {
+    resize_panels(ctx);
     for (TermSizeType x=0; x<ctx->board_width; ++x) {
         for (TermSizeType y=0; y<ctx->board_height; ++y) {
             draw_battlefield_cell(ctx, PlayerNum_PLAYER_ONE, x, y);
@@ -113,6 +128,90 @@ static void full_redraw(app_context* ctx) {
     panel_draw_box(ctx->player2_panel, COLOR_DEFAULT, COLOR_DEFAULT);
 }
 
+static void draw_cursor(app_context* ctx) {
+    Panel* panel = NULL;
+    PlayerNum target = PlayerNum_PLAYER_ONE;
+    if (ctx->turn == PlayerNum_PLAYER_ONE) {
+        panel = &ctx->player2_panel;
+        target = PlayerNum_PLAYER_TWO;
+    } else {
+        panel = &ctx->player1_panel;
+        target = PlayerNum_PLAYER_ONE;
+    }
+    if (ctx->cursor_redraw) {
+        draw_battlefield_cell(ctx, target, ctx->prev_cursor_x, ctx->prev_cursor_y);
+        panel_put_char(*panel, ctx->cursor_x*2+1, ctx->cursor_y+1, '@', COLOR_BLACK, COLOR_WHITE);
+        ctx->cursor_redraw = false;
+    }
+}
+
+static void change_turn(app_context* ctx) {
+    ctx->cursor_x = 0;
+    ctx->cursor_y = 0;
+    ctx->prev_cursor_x = 0;
+    ctx->prev_cursor_y = 0;
+    ctx->cursor_redraw = true;
+    ctx->need_redraw = true;
+    if (ctx->turn == PlayerNum_PLAYER_ONE) {
+        ctx->turn = PlayerNum_PLAYER_TWO;
+    } else {
+        ctx->turn = PlayerNum_PLAYER_ONE;
+    }
+}
+
+static void redraw_ship_area(app_context* ctx, PlayerNum owner, Ship* ship) {
+    TermSizeType x = ship->x;
+    TermSizeType y = ship->y;
+    bool is_horizontal = ship->is_horizontal;
+    TermSizeType size = (TermSizeType)ship->max_size;
+ 
+    TermSizeType x0 = (x > 0) ? x - 1 : 0;
+    TermSizeType y0 = (y > 0) ? y - 1 : 0;
+    TermSizeType x1 = is_horizontal ? x + size : x + 1;
+    TermSizeType y1 = is_horizontal ? y + 1 : y + size;
+    x1 = (x1 < ctx->board_width) ? x1 + 1 : ctx->board_width;
+    y1 = (y1 < ctx->board_height) ? y1 + 1 : ctx->board_height;
+ 
+    for (TermSizeType cy = y0; cy < y1; ++cy) {
+        for (TermSizeType cx = x0; cx < x1; ++cx) {
+            draw_battlefield_cell(ctx, owner, cx, cy);
+        }
+    }
+}
+
+static bool shot(app_context* ctx) {
+    BattleField* field = NULL;
+    PlayerNum target = PlayerNum_PLAYER_ONE;
+    if (ctx->turn == PlayerNum_PLAYER_ONE) {
+        field = ctx->player2_field;
+        target = PlayerNum_PLAYER_TWO;
+    } else {
+        field = ctx->player1_field;
+        target = PlayerNum_PLAYER_ONE;
+    }
+    bool is_hit = false;
+    Ship* ship = NULL;
+    GameEC ec = bf_shot(field, ctx->cursor_x, ctx->cursor_y, &is_hit, &ship); 
+    if (ec == GAME_EC_InternalMapError|| ec == GAME_EC_AllocationError) {ctx->critical_error = true; return false;}
+    if (ec == GAME_EC_CantPlaceHere) return true;
+    draw_battlefield_cell(ctx, target, ctx->cursor_x, ctx->cursor_y);
+    if (ship != NULL) {
+        redraw_ship_area(ctx, target, ship);
+    }
+    if (field->ships_left == 0) {
+        ctx->game_finished = true;
+        ctx->winner = ctx->turn;
+        ctx->need_redraw = true;
+        return true;
+    }
+    if (!is_hit) {
+        change_turn(ctx);
+    }
+
+    ctx->need_redraw = true;
+    return true;
+}
+
 bool on_stdin_battle(int fd, void* cont) {
     (void)fd;
     app_context* ctx = (app_context*)cont;
@@ -120,7 +219,10 @@ bool on_stdin_battle(int fd, void* cont) {
         char letter = 0;
         PressedKey key = read_key(&letter);
         if (key == KEY_NOTHING) break;
-        if (key == KEY_EOF) return false;
+        if (key == KEY_EOF) return false; 
+        if (ctx->game_finished) {
+            return false;
+        }
         switch (key) {
             case KEY_UP:
                 if (ctx->cursor_y > 0) {
@@ -155,6 +257,7 @@ bool on_stdin_battle(int fd, void* cont) {
                 ctx->cursor_redraw = true;
                 break;
             case KEY_ENTER:
+                return shot(ctx);
                 break;
             case KEY_BACKSPACE:
                 break;
@@ -174,9 +277,7 @@ bool on_signal_battle(int fd, void* context) {
     struct signalfd_siginfo si;
     for (;;) {
         ssize_t r = read(fd, &si, sizeof(si));
-        if (r < 0) {
-            break;
-        }
+        if (r < 0) break;
         if (r != sizeof(si)) break;
         if (si.ssi_signo == SIGINT) {
             return false;
@@ -184,7 +285,6 @@ bool on_signal_battle(int fd, void* context) {
             termsize size = get_terminal_size();
             resize_screen_buffer(size.width, size.height);
             write(STDOUT_FILENO, "\033[2J\033[H", 7);
-            resize_panels(ctx);
             ctx->main_panel = resize_main_panel();
             full_redraw(ctx);
             ctx->cursor_redraw = true;
@@ -198,6 +298,8 @@ bool on_tick_battle(void* context) {
     app_context* ctx = (app_context*)context;
     panel_draw_box(ctx->main_panel, COLOR_DEFAULT, COLOR_DEFAULT);
     if(ctx->last_error != NULL) panel_draw_text(ctx->main_panel, (ctx->main_panel.width-strlen(ctx->last_error))/2, 0, ctx->last_error, COLOR_RED, COLOR_DEFAULT);
+    if (ctx->game_finished) draw_win_message(ctx);
+    if (ctx->cursor_redraw) draw_cursor(ctx);
     if (ctx->need_redraw) print_screen_buffer();
     ctx->need_redraw = false;
     return true;
@@ -210,6 +312,7 @@ GameEC start_battle_scene(BattleField* player1_field, BattleField* player2_field
     (void)ec;
 
     app_context ctx = {        
+        .turn = PlayerNum_PLAYER_ONE,
         .need_redraw = true,
         .main_panel = resize_main_panel(),
         .cursor_x = 0,
@@ -217,13 +320,16 @@ GameEC start_battle_scene(BattleField* player1_field, BattleField* player2_field
         .cursor_redraw = true,
         .critical_error = false,
         .player1_field = player1_field,
-        .player2_field = player2_field
+        .player2_field = player2_field,
+        .board_width = player1_field->width,
+        .board_height = player1_field->height,
     };
     
     set_on_stdin(&on_stdin_battle);
     set_on_signal(&on_signal_battle);
     set_on_tick(&on_tick_battle);
 
+    resize_panels(&ctx);
     full_redraw(&ctx);
     main_loop(&ctx);
     
@@ -231,4 +337,3 @@ GameEC start_battle_scene(BattleField* player1_field, BattleField* player2_field
 
     return GAME_EC_Ok;
 }
-

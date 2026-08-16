@@ -9,6 +9,9 @@ typedef struct {
     int id;
     size_t current_size;
     size_t max_size;
+    TermSizeType x;
+    TermSizeType y;
+    bool is_horizontal;
 } Ship;
 
 typedef struct {
@@ -36,9 +39,11 @@ typedef enum {
 } CellType;
 
 BattleField* bf_init(GameSettings* settings);
+BattleField* bf_init_random(GameSettings* settings);
 
 GameEC bf_place_ship(BattleField* bf, TermSizeType x, TermSizeType y, bool is_horizontal, ShipType type);
-GameEC bf_shot(BattleField* bf, TermSizeType x, TermSizeType y, bool* is_hit);
+GameEC bf_shot(BattleField* bf, TermSizeType x, TermSizeType y, bool* is_hit, Ship** sunken_ship);
+bool is_end(BattleField* field);
 
 CellType bf_get_cell(BattleField* bf, TermSizeType x, TermSizeType y);
 void bf_free(BattleField* bf);
