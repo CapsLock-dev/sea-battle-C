@@ -4,6 +4,8 @@
 #include "game/main_menu_scene.h"
 #include "game/settings_scene.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 #define DEFAULT_WIDTH 10
 #define DEFAULT_HEIGHT 10
@@ -14,6 +16,7 @@
 
 int run(int argc, char** argv) {
     (void)argc; (void)argv;
+    srand((unsigned int)time(NULL));
     bool running = true;
     init_view();
     termsize size = get_terminal_size();

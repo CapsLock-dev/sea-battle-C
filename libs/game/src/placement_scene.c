@@ -64,6 +64,7 @@ static void draw_battlefield_cell(app_context* ctx, TermSizeType x, TermSizeType
             c = 'O';
             break;
         case CELL_TYPE_SHIP:
+            fg = COLOR_GREEN;
             c = '@';
             break;
     }

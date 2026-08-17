@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "game/battlefield.h"
+#include "game/ai.h"
 #include "zxcurses/panel.h"
 #include "zxcurses/screen.h"
 #include "zxcurses/event_listener.h"
@@ -27,6 +28,13 @@ typedef struct {
 
     BattleField* player1_field;
     BattleField* player2_field;
+
+    TermSizeType p1_cursor_x;
+    TermSizeType p1_cursor_y;
+
+    TermSizeType p2_cursor_x;
+    TermSizeType p2_cursor_y;
+
     Panel player1_panel;
     Panel player2_panel;
 
@@ -37,6 +45,9 @@ typedef struct {
 
     PlayerNum turn;
     PlayerNum winner;
+    bool glowing_ships;
+    bool ai_enabled;
+    AIMemory ai_memory;
 } app_context;
 
 static void resize_panels(app_context* ctx) {
@@ -55,10 +66,8 @@ static void resize_panels(app_context* ctx) {
     TermSizeType x_start = (size.width  - total_width) / 2;
     TermSizeType y_start = (size.height - total_height) / 2;
 
-    ctx->player1_panel= (Panel){ .width = panel_width, .height = panel_height,
-                        .x = x_start, .y = y_start };
-    ctx->player2_panel = (Panel){ .width = panel_width, .height = panel_height,
-                        .x = x_start + panel_width + gap, .y = y_start };
+    ctx->player1_panel= (Panel){ .width = panel_width, .height = panel_height, .x = x_start, .y = y_start };
+    ctx->player2_panel = (Panel){ .width = panel_width, .height = panel_height, .x = x_start + panel_width + gap, .y = y_start };
 }
 
 static Panel resize_main_panel() {
@@ -93,9 +102,9 @@ static void draw_battlefield_cell(app_context* ctx, PlayerNum player_num, TermSi
     Color bg = COLOR_DEFAULT;
     char c = ' ';
     switch (ct) {
-        case CELL_TYPE_SHIP:
         case CELL_TYPE_RADIUS:
         case CELL_TYPE_EMPTY:
+            fg = COLOR_CYAN;
             c = '#';
             break;
         case CELL_TYPE_HIT:
@@ -103,12 +112,17 @@ static void draw_battlefield_cell(app_context* ctx, PlayerNum player_num, TermSi
             fg = COLOR_RED;
             break;
         case CELL_TYPE_MISS:
+            fg = COLOR_YELLOW;
             c = 'O';
             break;
-       // case CELL_TYPE_SHIP:
-       //     c = '@';
-       //     fg = COLOR_GREEN;
-       //     break;
+        case CELL_TYPE_SHIP:
+            c = '#';
+            fg = COLOR_CYAN;
+            if (ctx->glowing_ships) {
+                c = '@';
+                fg = COLOR_GREEN;
+            }
+       break;
     }
     panel_put_char(*panel, x*2+1, y+1, c, fg, bg);
     panel_put_char(*panel, x*2+1+1, y+1, ' ', COLOR_DEFAULT, COLOR_DEFAULT);
@@ -146,17 +160,31 @@ static void draw_cursor(app_context* ctx) {
 }
 
 static void change_turn(app_context* ctx) {
-    ctx->cursor_x = 0;
-    ctx->cursor_y = 0;
-    ctx->prev_cursor_x = 0;
-    ctx->prev_cursor_y = 0;
-    ctx->cursor_redraw = true;
-    ctx->need_redraw = true;
     if (ctx->turn == PlayerNum_PLAYER_ONE) {
+        ctx->p1_cursor_x = ctx->cursor_x;
+        ctx->p1_cursor_y = ctx->cursor_y;
+
+        ctx->cursor_x = ctx->p2_cursor_x;
+        ctx->cursor_y = ctx->p2_cursor_y;
+
         ctx->turn = PlayerNum_PLAYER_TWO;
     } else {
+        ctx->p2_cursor_x = ctx->cursor_x;
+        ctx->p2_cursor_y = ctx->cursor_y;
+
+        ctx->cursor_x = ctx->p1_cursor_x;
+        ctx->cursor_y = ctx->p1_cursor_y;
+
         ctx->turn = PlayerNum_PLAYER_ONE;
     }
+    ctx->prev_cursor_x = ctx->cursor_x;
+    ctx->prev_cursor_y = ctx->cursor_y;
+    if (ctx->ai_enabled && ctx->turn == PlayerNum_PLAYER_TWO) {
+        ctx->cursor_redraw = false;
+    } else {
+        ctx->cursor_redraw = true;
+    }
+    ctx->need_redraw = true;
 }
 
 static void redraw_ship_area(app_context* ctx, PlayerNum owner, Ship* ship) {
@@ -197,6 +225,9 @@ static bool shot(app_context* ctx) {
     draw_battlefield_cell(ctx, target, ctx->cursor_x, ctx->cursor_y);
     if (ship != NULL) {
         redraw_ship_area(ctx, target, ship);
+    }
+    if (ctx->ai_enabled && ctx->turn == PlayerNum_PLAYER_TWO) {
+        ai_set_shot_result(&ctx->ai_memory, is_hit, ship != NULL); 
     }
     if (field->ships_left == 0) {
         ctx->game_finished = true;
@@ -263,6 +294,13 @@ bool on_stdin_battle(int fd, void* cont) {
                 break;
             case KEY_SPACE:
                 break;
+            case KEY_LETTER:
+                if (letter == 'z') {
+                    ctx->glowing_ships = !ctx->glowing_ships;
+                    full_redraw(ctx);
+                    ctx->cursor_redraw = true;
+                }
+                break;
             default:
                 break;
         }
@@ -298,6 +336,12 @@ bool on_tick_battle(void* context) {
     app_context* ctx = (app_context*)context;
     panel_draw_box(ctx->main_panel, COLOR_DEFAULT, COLOR_DEFAULT);
     if(ctx->last_error != NULL) panel_draw_text(ctx->main_panel, (ctx->main_panel.width-strlen(ctx->last_error))/2, 0, ctx->last_error, COLOR_RED, COLOR_DEFAULT);
+    if (ctx->ai_enabled && ctx->turn == PlayerNum_PLAYER_TWO) {
+        AIShot ai_shot = ai_get_next_shot(&ctx->ai_memory); 
+        ctx->cursor_x = ai_shot.x;
+        ctx->cursor_y = ai_shot.y;
+        shot(ctx);
+    }
     if (ctx->game_finished) draw_win_message(ctx);
     if (ctx->cursor_redraw) draw_cursor(ctx);
     if (ctx->need_redraw) print_screen_buffer();
@@ -305,7 +349,7 @@ bool on_tick_battle(void* context) {
     return true;
 }
 
-GameEC start_battle_scene(BattleField* player1_field, BattleField* player2_field) {
+GameEC start_battle_scene(BattleField* player1_field, BattleField* player2_field, bool enable_ai) {
     clear_screen_buffer();
     init_event_listener();
     GameEC ec = GAME_EC_Ok;
@@ -323,7 +367,19 @@ GameEC start_battle_scene(BattleField* player1_field, BattleField* player2_field
         .player2_field = player2_field,
         .board_width = player1_field->width,
         .board_height = player1_field->height,
+        .glowing_ships = false,
+        .ai_enabled = enable_ai,
     };
+    if (ctx.ai_enabled) {
+        ctx.ai_memory = (AIMemory){
+           .bf = player1_field,
+           .is_searching = true,
+           .cant_find_valid_shot = false,
+           .last_shot = (LastShot){
+               .found_correct_axis = false,
+           }
+        };
+    }
     
     set_on_stdin(&on_stdin_battle);
     set_on_signal(&on_signal_battle);

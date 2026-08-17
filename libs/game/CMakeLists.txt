@@ -10,6 +10,7 @@ target_sources(game
         src/placement_scene.c
         src/battle_scene.c
         src/battlefield.c
+        src/ai.c
 	PUBLIC
 		FILE_SET HEADERS
 		BASE_DIRS include
@@ -20,4 +21,5 @@ target_sources(game
             include/game/placement_scene.h
             include/game/battle_scene.h
             include/game/battlefield.h
+            include/game/ai.h
 )
