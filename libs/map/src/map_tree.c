@@ -9,8 +9,7 @@ struct Map {
     Tree* tree;
 };
 
-Map* map_init(size_t size) {
-    (void)size;
+Map* map_init() {
     Map* map = malloc(sizeof(Map));
     if (map == NULL) return NULL;
 
