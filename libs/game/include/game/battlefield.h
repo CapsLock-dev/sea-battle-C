@@ -1,9 +1,9 @@
 #ifndef CL_GAME_BATTLEFIELD_H
 #define CL_GAME_BATTLEFIELD_H
+#include "game/error.h"
+#include "game/settings_scene.h"
 #include "map/map.h"
 #include "zxcurses/types.h"
-#include "game/settings_scene.h"
-#include "game/error.h"
 
 typedef struct {
     int id;
@@ -15,7 +15,8 @@ typedef struct {
 } Ship;
 
 typedef struct {
-    Map* field; // value = 0 miss, value = 1 ship radius, value > 1 ship_id, value < 0 sunken ship_id, not found = water
+    Map* field;  // value = 0 miss, value = 1 ship radius, value > 1 ship_id,
+                 // value < 0 sunken ship_id, not found = water
     Ship* ships;
     TermSizeType width;
     TermSizeType height;
@@ -41,8 +42,10 @@ typedef enum {
 BattleField* bf_init(GameSettings* settings);
 BattleField* bf_init_random(GameSettings* settings);
 
-GameEC bf_place_ship(BattleField* bf, TermSizeType x, TermSizeType y, bool is_horizontal, ShipType type);
-GameEC bf_shot(BattleField* bf, TermSizeType x, TermSizeType y, bool* is_hit, Ship** sunken_ship);
+GameEC bf_place_ship(BattleField* bf, TermSizeType x, TermSizeType y,
+                     bool is_horizontal, ShipType type);
+GameEC bf_shot(BattleField* bf, TermSizeType x, TermSizeType y, bool* is_hit,
+               Ship** sunken_ship);
 bool is_end(BattleField* field);
 
 CellType bf_get_cell(BattleField* bf, TermSizeType x, TermSizeType y);

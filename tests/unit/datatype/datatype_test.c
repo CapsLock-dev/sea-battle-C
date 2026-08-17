@@ -1,13 +1,15 @@
-#include "cltest/cltest.h"
 #include "datatype/datatype.h"
+
 #include <stdlib.h>
+
+#include "cltest/cltest.h"
 
 CompareResult cmp(const DataEnvelope* a, const DataEnvelope* b) {
     if (a->type->id != 1 || b->type->id != 1) return CMP_WRONG;
     int ai = *(int*)a->data;
     int bi = *(int*)b->data;
     if (ai > bi) {
-        return CMP_MORE; 
+        return CMP_MORE;
     } else if (ai < bi) {
         return CMP_LESS;
     }
@@ -17,7 +19,7 @@ CompareResult cmp(const DataEnvelope* a, const DataEnvelope* b) {
 size_t hash(const DataEnvelope* a) {
     if (a->type->id != 1) return 0;
     int ai = *(int*)a->data;
-    return (size_t)(ai*ai)*978;
+    return (size_t)(ai * ai) * 978;
 }
 
 TEST_F(EnvelopeInt) {
@@ -43,17 +45,13 @@ TEST_F(EnvelopeInt) {
     EXPECT_EQ_NUM(type->cmp(env_a, env_a), CMP_EQUAL);
     EXPECT_EQ_NUM(type->cmp(env_b, env_b), CMP_EQUAL);
 
-    TEAR_DOWN(
-        datatype_free(type);
-        envelope_free(env_a);
-        envelope_free(env_b);
-    )
+    TEAR_DOWN(datatype_free(type); envelope_free(env_a); envelope_free(env_b);)
 }
 
 typedef struct Coord {
     int x;
     int y;
-} Coord ;
+} Coord;
 
 CompareResult cmp_coord(const DataEnvelope* a, const DataEnvelope* b) {
     if (a->type->id != 2 || b->type->id != 2) return CMP_WRONG;
@@ -84,7 +82,8 @@ TEST_F(EnvelopeStruct) {
     DataEnvelope* env_c = NULL;
     DataEnvelope* env_d = NULL;
 
-    const DataType* type = datatype_create(2, cmp_coord, hash_coord, sizeof(Coord));
+    const DataType* type =
+        datatype_create(2, cmp_coord, hash_coord, sizeof(Coord));
     const DataType* type_int = datatype_create(1, cmp, hash, sizeof(int));
     EXPECT_TRUE(type != NULL);
     EXPECT_TRUE(type_int != NULL);
@@ -112,12 +111,7 @@ TEST_F(EnvelopeStruct) {
     EXPECT_EQ_NUM(type->cmp(env_b, env_b), CMP_EQUAL);
     EXPECT_EQ_NUM(type->cmp(env_c, env_b), CMP_MORE);
 
-    TEAR_DOWN(
-        datatype_free(type);
-        datatype_free(type_int);
-        envelope_free(env_a);
-        envelope_free(env_b);
-        envelope_free(env_c);
-        envelope_free(env_d);
-    )
+    TEAR_DOWN(datatype_free(type); datatype_free(type_int);
+              envelope_free(env_a); envelope_free(env_b); envelope_free(env_c);
+              envelope_free(env_d);)
 }

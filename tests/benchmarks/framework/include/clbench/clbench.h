@@ -27,11 +27,10 @@ void stop_clock(BenchmarkClock* clock);
 Metrics get_metrics(BenchmarkClock clock, TimePrefix prefix);
 void clb_new_bench(const char* name, Metrics (*func)());
 
-#define BENCH_F(name) Metrics name(); \
-void clb_new_bench_helper_##name() __attribute__ ((constructor));\
-void clb_new_bench_helper_##name() { \
-    clb_new_bench(#name, name);\
-}\
-Metrics name()
-    
+#define BENCH_F(name)                                                  \
+    Metrics name();                                                    \
+    void clb_new_bench_helper_##name() __attribute__((constructor));   \
+    void clb_new_bench_helper_##name() { clb_new_bench(#name, name); } \
+    Metrics name()
+
 #endif

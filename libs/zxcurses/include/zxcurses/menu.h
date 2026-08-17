@@ -10,6 +10,6 @@ typedef struct {
 } Menu;
 
 void menu_render(Menu* menu);
-void menu_move_selection(Menu* menu, int direction); 
+void menu_move_selection(Menu* menu, int direction);
 
 #endif

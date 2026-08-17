@@ -21,11 +21,12 @@ typedef struct {
 } InputWidget;
 
 InputWidget* input_widget_init(Panel panel);
-TUIError input_widget_add_entry(InputWidget* widget, const char* label, size_t limit, char* base_value);
+TUIError input_widget_add_entry(InputWidget* widget, const char* label,
+                                size_t limit, char* base_value);
 void input_widget_free(InputWidget* widget);
 
 void input_widget_render(InputWidget* widget);
-void input_widget_move_selection(InputWidget* widget, int direction); 
+void input_widget_move_selection(InputWidget* widget, int direction);
 void input_widget_insert_symbol(InputWidget* widget, char symbol);
 void input_widget_remove_symbol(InputWidget* widget);
 void input_widget_highlight_on(InputWidget* widget, Color fg, Color bg);

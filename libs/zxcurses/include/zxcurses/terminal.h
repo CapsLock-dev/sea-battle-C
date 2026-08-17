@@ -1,8 +1,9 @@
 #ifndef CL_ZXCURSES_TERMINAL_H
 #define CL_ZXCURSES_TERMINAL_H
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
-#include <sys/ioctl.h>
+
 #include "zxcurses/types.h"
 
 typedef enum {
@@ -17,13 +18,13 @@ typedef enum {
     KEY_SPACE,
     KEY_BACKSPACE,
 
-	KEY_LETTER,
+    KEY_LETTER,
     KEY_EOF,
 } PressedKey;
 
 typedef struct {
-	TermSizeType width;
-	TermSizeType height;
+    TermSizeType width;
+    TermSizeType height;
 } termsize;
 
 void init_view();

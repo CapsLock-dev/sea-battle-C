@@ -1,6 +1,7 @@
 #ifndef CL_MAP_MAP_H
 #define CL_MAP_MAP_H
 #include <stddef.h>
+
 #include "map/errors.h"
 #include "map/internal/entry.h"
 

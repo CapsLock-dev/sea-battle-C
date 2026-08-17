@@ -1,6 +1,7 @@
 #include <stdio.h>
-#include <unistd.h>
 #include <sys/wait.h>
+#include <unistd.h>
+
 #include "clbench/clbench.h"
 
 #define WIDTH 200

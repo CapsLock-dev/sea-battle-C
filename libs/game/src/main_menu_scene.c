@@ -1,10 +1,12 @@
+#include "game/main_menu_scene.h"
+
 #include <signal.h>
 #include <sys/signalfd.h>
-#include "game/main_menu_scene.h"
-#include "zxcurses/menu.h"
-#include "zxcurses/screen.h"
+
 #include "zxcurses/event_listener.h"
+#include "zxcurses/menu.h"
 #include "zxcurses/panel.h"
+#include "zxcurses/screen.h"
 
 typedef struct {
     Menu m;
@@ -32,13 +34,13 @@ bool on_stdin_mainmenu(int fd, void* cont) {
                     case MAIN_MENU_OPTION_SINGLEPLAYER:
                         ctx->main_menu_option = (MainMenuOption)ctx->m.selected;
                         return false;
-                    case MAIN_MENU_OPTION_MULTIPLAYER: 
+                    case MAIN_MENU_OPTION_MULTIPLAYER:
                         ctx->main_menu_option = (MainMenuOption)ctx->m.selected;
                         return false;
                     case MAIN_MENU_OPTION_SETTINGS:
                         ctx->main_menu_option = (MainMenuOption)ctx->m.selected;
                         return false;
-                    case MAIN_MENU_OPTION_QUIT: 
+                    case MAIN_MENU_OPTION_QUIT:
                         ctx->main_menu_option = (MainMenuOption)ctx->m.selected;
                         return false;
                 }
@@ -67,7 +69,10 @@ bool on_signal_mainmenu(int fd, void* context) {
             termsize size = get_terminal_size();
             resize_screen_buffer(size.width, size.height);
             write(STDOUT_FILENO, "\033[2J\033[H", 7);
-            ctx->m.panel = (Panel){.x=(size.width-15)/2, .y=(size.height-6)/2, .height=6, .width=15};
+            ctx->m.panel = (Panel){.x = (size.width - 15) / 2,
+                                   .y = (size.height - 6) / 2,
+                                   .height = 6,
+                                   .width = 15};
             ctx->need_redraw = true;
         }
     }
@@ -85,14 +90,17 @@ bool on_tick_mainmenu(void* context) {
 MainMenuOption start_main_menu_scene() {
     clear_screen_buffer();
     init_event_listener();
-    const char* menu_items[] = {"Singleplayer", "Multiplayer", "Settings", "Quit"};
+    const char* menu_items[] = {"Singleplayer", "Multiplayer", "Settings",
+                                "Quit"};
     termsize size = get_terminal_size();
-    Panel panel = {.x=(size.width-15)/2, .y=(size.height-6)/2, .height=6, .width=15};
+    Panel panel = {.x = (size.width - 15) / 2,
+                   .y = (size.height - 6) / 2,
+                   .height = 6,
+                   .width = 15};
     app_context ctx = {
-        .m = {.panel = panel, .count=4, .items=menu_items, .selected=0},
+        .m = {.panel = panel, .count = 4, .items = menu_items, .selected = 0},
         .need_redraw = true,
-        .main_menu_option = MAIN_MENU_OPTION_QUIT
-    };
+        .main_menu_option = MAIN_MENU_OPTION_QUIT};
     set_on_stdin(&on_stdin_mainmenu);
     set_on_signal(&on_signal_mainmenu);
     set_on_tick(&on_tick_mainmenu);

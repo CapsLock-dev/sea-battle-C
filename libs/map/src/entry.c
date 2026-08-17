@@ -27,6 +27,6 @@ CompareResult cmp_int(const DataEnvelope* a, const DataEnvelope* b) {
 
 size_t hash_coord(const DataEnvelope* a) {
     if (a->type->id != 1) return CMP_WRONG;
-    //Coord ai = *(Coord*)a->data;
+    // Coord ai = *(Coord*)a->data;
     return 1;
 }

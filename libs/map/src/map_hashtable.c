@@ -1,7 +1,8 @@
-#include "map/map.h"
-#include "hash_table/hash_table.h"
 #include <stdlib.h>
 #include <string.h>
+
+#include "hash_table/hash_table.h"
+#include "map/map.h"
 
 static MapEC hashtable_error_to_map_error(HashTableEC ec);
 
@@ -13,23 +14,37 @@ Map* map_init() {
     Map* map = malloc(sizeof(Map));
     if (map == NULL) return NULL;
 
-    const DataType* key_type = datatype_create(1, &cmp_coord, &hash_coord, sizeof(Coord));
-    if (key_type == NULL) {free(map); return NULL;}
+    const DataType* key_type =
+        datatype_create(1, &cmp_coord, &hash_coord, sizeof(Coord));
+    if (key_type == NULL) {
+        free(map);
+        return NULL;
+    }
 
-    const DataType* value_type = datatype_create(2, &cmp_int, NULL, sizeof(int));
-    if (value_type == NULL) {free(map); datatype_free(key_type); return NULL;}
+    const DataType* value_type =
+        datatype_create(2, &cmp_int, NULL, sizeof(int));
+    if (value_type == NULL) {
+        free(map);
+        datatype_free(key_type);
+        return NULL;
+    }
 
     map->table = hash_table_init(key_type, value_type);
-    if (map->table == NULL) {free(map); datatype_free(key_type); datatype_free(value_type); return NULL;}
+    if (map->table == NULL) {
+        free(map);
+        datatype_free(key_type);
+        datatype_free(value_type);
+        return NULL;
+    }
 
     return map;
 }
 
 void map_free(Map* m) {
-    if (m == NULL) return; 
+    if (m == NULL) return;
     datatype_free(m->table->key_type);
     datatype_free(m->table->value_type);
-    hash_table_free(m->table);    
+    hash_table_free(m->table);
     free(m);
 }
 
@@ -99,4 +114,3 @@ static MapEC hashtable_error_to_map_error(HashTableEC ec) {
             return MAP_ERR_KeyAlreadyExists;
     }
 }
-

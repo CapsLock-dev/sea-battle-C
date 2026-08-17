@@ -1,7 +1,7 @@
 #ifndef CL_GAME_AI_H
 #define CL_GAME_AI_H
-#include "zxcurses/types.h"
 #include "game/battlefield.h"
+#include "zxcurses/types.h"
 
 typedef struct {
     TermSizeType x;

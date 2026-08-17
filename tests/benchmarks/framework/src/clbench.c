@@ -1,6 +1,7 @@
 #include "clbench/clbench.h"
-#include <stdlib.h>
+
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef struct BenchCase BenchCase;
 
@@ -19,11 +20,11 @@ typedef struct {
 static BenchList* g_bench_list;
 
 BenchmarkClock start_clock(unsigned int iterations) {
-    return (BenchmarkClock){.iterations=iterations, .start=clock()};
+    return (BenchmarkClock){.iterations = iterations, .start = clock()};
 }
 void stop_clock(BenchmarkClock* bench_clock) {
     clock_t stop = clock();
-    long double total = stop-bench_clock->start;
+    long double total = stop - bench_clock->start;
     bench_clock->total_time = total;
 }
 Metrics get_metrics(BenchmarkClock clock, TimePrefix prefix) {
@@ -48,26 +49,26 @@ Metrics get_metrics(BenchmarkClock clock, TimePrefix prefix) {
     return metrics;
 }
 
-void clb_new_bench(const char* name, Metrics(*func)()) {
-	BenchCase* new_case = malloc(sizeof(BenchCase));
-	if (new_case == NULL) return;
-	new_case->func = func;
-	new_case->name = name;
-	new_case->next = NULL;
+void clb_new_bench(const char* name, Metrics (*func)()) {
+    BenchCase* new_case = malloc(sizeof(BenchCase));
+    if (new_case == NULL) return;
+    new_case->func = func;
+    new_case->name = name;
+    new_case->next = NULL;
 
-	if (g_bench_list == NULL) {
-		g_bench_list = malloc(sizeof(BenchList));
-		g_bench_list->head = new_case;
-		g_bench_list->tail = new_case;
-	} else {
-		g_bench_list->tail->next = new_case;	
-		g_bench_list->tail = new_case;
-	}
-
+    if (g_bench_list == NULL) {
+        g_bench_list = malloc(sizeof(BenchList));
+        g_bench_list->head = new_case;
+        g_bench_list->tail = new_case;
+    } else {
+        g_bench_list->tail->next = new_case;
+        g_bench_list->tail = new_case;
+    }
 }
 
 int main(int argc, char** argv) {
-    (void)argc; (void)argv;
+    (void)argc;
+    (void)argv;
     BenchCase* curr = g_bench_list->head;
     while (curr != NULL) {
         Metrics res = curr->func();
@@ -77,11 +78,11 @@ int main(int argc, char** argv) {
     }
     curr = g_bench_list->head;
     printf("BENCHMARK RESULTS: \n");
-    int i=1;
+    int i = 1;
     while (curr != NULL) {
         Metrics metrics = curr->result;
         char* prefix = 0;
-        switch(metrics.prefix) {
+        switch (metrics.prefix) {
             case CLB_TIMEPREFIX_NANO:
                 prefix = "ns";
                 break;
@@ -92,8 +93,10 @@ int main(int argc, char** argv) {
                 prefix = "ms";
                 break;
         }
-        printf("Benchmark %d) %s iterations=%u avg_time=%Lf%s total_time=%Lf%s\n", 
-                i++, curr->name, metrics.iterations, metrics.avg_time, prefix, metrics.total_time, prefix);
+        printf(
+            "Benchmark %d) %s iterations=%u avg_time=%Lf%s total_time=%Lf%s\n",
+            i++, curr->name, metrics.iterations, metrics.avg_time, prefix,
+            metrics.total_time, prefix);
         BenchCase* next = curr->next;
         free(curr);
         curr = next;
