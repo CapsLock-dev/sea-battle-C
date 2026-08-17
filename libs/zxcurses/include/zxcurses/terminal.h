@@ -1,0 +1,37 @@
+#ifndef CL_ZXCURSES_TERMINAL_H
+#define CL_ZXCURSES_TERMINAL_H
+#include <sys/ioctl.h>
+#include <termios.h>
+#include <unistd.h>
+
+#include "zxcurses/types.h"
+
+typedef enum {
+    KEY_NOTHING,
+
+    KEY_UP,
+    KEY_DOWN,
+    KEY_LEFT,
+    KEY_RIGHT,
+
+    KEY_ENTER,
+    KEY_SPACE,
+    KEY_BACKSPACE,
+
+    KEY_LETTER,
+    KEY_EOF,
+} PressedKey;
+
+typedef struct {
+    TermSizeType width;
+    TermSizeType height;
+} termsize;
+
+void init_view();
+void end_view();
+void clear_terminal();
+void move_cursor(TermSizeType x, TermSizeType y);
+PressedKey read_key(char* letter);
+termsize get_terminal_size();
+
+#endif

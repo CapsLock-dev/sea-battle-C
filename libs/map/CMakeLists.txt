@@ -22,6 +22,7 @@ target_link_libraries(map PUBLIC datatype ${BACKEND_LIB})
 target_sources(map
 	PRIVATE	
         ${MAP_SRC}
+        src/entry.c
 	PUBLIC
 		FILE_SET HEADERS
 		BASE_DIRS include

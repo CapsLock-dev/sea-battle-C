@@ -1,6 +1,7 @@
+#include <stdlib.h>
+
 #include "map/map.h"
 #include "tree/tree.h"
-#include <stdlib.h>
 
 static MapEC tree_error_to_map_error(TreeEC ec);
 
@@ -8,19 +9,32 @@ struct Map {
     Tree* tree;
 };
 
-Map* map_init(size_t size) {
-    (void)size;
+Map* map_init() {
     Map* map = malloc(sizeof(Map));
     if (map == NULL) return NULL;
 
-    const DataType* key_type = datatype_create(1, &cmp_coord, &hash_coord, sizeof(Coord));
-    if (key_type == NULL) {free(map); return NULL;}
+    const DataType* key_type =
+        datatype_create(1, &cmp_coord, &hash_coord, sizeof(Coord));
+    if (key_type == NULL) {
+        free(map);
+        return NULL;
+    }
 
-    const DataType* value_type = datatype_create(2, &cmp_int, NULL, sizeof(int));
-    if (value_type == NULL) {free(map); datatype_free(key_type); return NULL;}
+    const DataType* value_type =
+        datatype_create(2, &cmp_int, NULL, sizeof(int));
+    if (value_type == NULL) {
+        free(map);
+        datatype_free(key_type);
+        return NULL;
+    }
 
     map->tree = tree_init(key_type, value_type);
-    if (map->tree == NULL) {free(map); datatype_free(key_type); datatype_free(value_type); return NULL;}
+    if (map->tree == NULL) {
+        free(map);
+        datatype_free(key_type);
+        datatype_free(value_type);
+        return NULL;
+    }
 
     return map;
 }
@@ -37,7 +51,7 @@ MapEC map_insert(Map* m, Coord key, int value) {
     if (m == NULL) return MAP_ERR_IsNull;
 
     Tree* t = m->tree;
-    
+
     DataEnvelope* key_envelope = envelope_create(t->key_type, &key);
     key_envelope->full_copy = false;
     DataEnvelope* value_envelope = envelope_create(t->value_type, &value);
@@ -51,7 +65,7 @@ MapEC map_insert(Map* m, Coord key, int value) {
 MapEC map_delete(Map* m, Coord key) {
     if (m == NULL) return MAP_ERR_IsNull;
     Tree* t = m->tree;
-    
+
     DataEnvelope* key_envelope = envelope_create(t->key_type, &key);
 
     TreeEC ec = tree_delete(t, key_envelope);
@@ -63,7 +77,7 @@ MapEC map_delete(Map* m, Coord key) {
 
 MapEC map_find(Map* m, Coord key, int** out_value) {
     Tree* t = m->tree;
-    
+
     DataEnvelope* key_envelope = envelope_create(t->key_type, &key);
     key_envelope->full_copy = false;
     DataEnvelope* res = NULL;

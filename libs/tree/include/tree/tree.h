@@ -1,9 +1,10 @@
 #ifndef CL_TREE_TREE_H
 #define CL_TREE_TREE_H
 
-#include "tree/errors.h"
-#include "datatype/datatype.h"
 #include <stddef.h>
+
+#include "datatype/datatype.h"
+#include "tree/errors.h"
 
 typedef struct Node Node;
 #define TREE_MAX_ENTRY_COUNT 3
@@ -12,18 +13,18 @@ typedef struct Node Node;
 typedef struct {
     DataEnvelope* key;
     DataEnvelope* value;
-} Entry; 
+} Entry;
 
 struct Node {
     Entry entries[TREE_MAX_ENTRY_COUNT];
-	Node* children[TREE_MAX_CHILDREN_COUNT];
+    Node* children[TREE_MAX_CHILDREN_COUNT];
     size_t curr_entry_count;
 };
 
-typedef struct {    
+typedef struct {
     const DataType* key_type;
     const DataType* value_type;
-	Node* head;
+    Node* head;
 } Tree;
 
 Tree* tree_init(const DataType* key_type, const DataType* value_type);

@@ -1,0 +1,47 @@
+#include "zxcurses/panel.h"
+
+#include <string.h>
+
+#include "zxcurses/screen.h"
+
+void panel_put_char(Panel panel, TermSizeType relative_x,
+                    TermSizeType relative_y, char ch, Color fg, Color bg) {
+    if (relative_x >= panel.width || relative_y >= panel.height) return;
+    set_cell(panel.x + relative_x, panel.y + relative_y, ch, fg, bg);
+}
+
+void panel_draw_text(Panel panel, TermSizeType lx, TermSizeType ly,
+                     const char* text, Color fg, Color bg) {
+    if (ly >= panel.height) return;
+    size_t len = strlen(text);
+    for (size_t i = 0; i < len; i++) {
+        TermSizeType px = (TermSizeType)(lx + i);
+        if (px >= panel.width) break;
+        panel_put_char(panel, px, ly, text[i], fg, bg);
+    }
+}
+
+void panel_draw_box(Panel panel, Color fg, Color bg) {
+    if (panel.width < 2 || panel.height < 2) return;
+    for (TermSizeType x = 0; x < panel.width; x++) {
+        panel_put_char(panel, x, 0, '-', fg, bg);
+        panel_put_char(panel, x, (TermSizeType)(panel.height - 1), '-', fg, bg);
+    }
+    for (TermSizeType y = 0; y < panel.height; y++) {
+        panel_put_char(panel, 0, y, '|', fg, bg);
+        panel_put_char(panel, (TermSizeType)(panel.width - 1), y, '|', fg, bg);
+    }
+    panel_put_char(panel, 0, 0, '+', fg, bg);
+    panel_put_char(panel, (TermSizeType)(panel.width - 1), 0, '+', fg, bg);
+    panel_put_char(panel, 0, (TermSizeType)(panel.height - 1), '+', fg, bg);
+    panel_put_char(panel, (TermSizeType)(panel.width - 1),
+                   (TermSizeType)(panel.height - 1), '+', fg, bg);
+}
+
+void panel_fill(Panel panel, char ch, Color fg, Color bg) {
+    for (TermSizeType y = 0; y < panel.height; y++) {
+        for (TermSizeType x = 0; x < panel.width; x++) {
+            panel_put_char(panel, x, y, ch, fg, bg);
+        }
+    }
+}

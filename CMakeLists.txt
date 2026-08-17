@@ -9,6 +9,8 @@ add_subdirectory(libs/datatype)
 add_subdirectory(libs/hash_table)
 add_subdirectory(libs/tree)
 add_subdirectory(libs/map)
+add_subdirectory(libs/game)
+add_subdirectory(libs/zxcurses)
 add_subdirectory(libs/core)
 
 add_executable(${PROJECT_NAME})
