@@ -8,6 +8,7 @@
 #include "game/main_menu_scene.h"
 #include "game/settings_scene.h"
 #include "zxcurses/screen.h"
+#include "zxcurses/terminal.h"
 
 #define DEFAULT_WIDTH 10
 #define DEFAULT_HEIGHT 10
@@ -59,5 +60,6 @@ int run(int argc, char** argv) {
     if (game_ec != GAME_EC_Ok) {
         printf("Game error: code=%d", game_ec);
     }
+    free_screen_buffer();
     return 0;
 }

@@ -1,4 +1,5 @@
 #include "zxcurses/screen.h"
+#include "zxcurses/terminal.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,6 +29,10 @@ TUIError create_screen_buffer(TermSizeType width, TermSizeType height) {
     g_width = width;
     g_height = height;
     return TUI_EC_Ok;
+}
+
+void free_screen_buffer() {
+    free(g_screen_buffer);
 }
 
 TUIError resize_screen_buffer(TermSizeType width, TermSizeType height) {

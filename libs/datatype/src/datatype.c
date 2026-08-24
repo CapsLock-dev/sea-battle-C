@@ -41,7 +41,7 @@ void envelope_free(DataEnvelope* envelope) {
 
 DataEnvelope* envelope_copy(DataEnvelope* data) {
     if (!data->full_copy) return data;
-    DataEnvelope* env = malloc(sizeof(DataEnvelope));
+    DataEnvelope* env = calloc(1,sizeof(DataEnvelope));
     if (env == NULL) return NULL;
     env->data = malloc(data->type->size);
     if (env->data == NULL) {

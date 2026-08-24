@@ -6,9 +6,8 @@ CompareResult cmp_coord(const DataEnvelope* a, const DataEnvelope* b) {
     Coord bi = *(Coord*)b->data;
 
     if (ai.y > bi.y) return CMP_MORE;
-    if (ai.x > bi.x) return CMP_MORE;
-
     if (ai.y < bi.y) return CMP_LESS;
+    if (ai.x > bi.x) return CMP_MORE;
     if (ai.x < bi.x) return CMP_LESS;
 
     return CMP_EQUAL;

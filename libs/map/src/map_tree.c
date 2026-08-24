@@ -58,6 +58,10 @@ MapEC map_insert(Map* m, Coord key, int value) {
     value_envelope->full_copy = false;
 
     TreeEC ec = tree_insert(t, key_envelope, value_envelope);
+    if (ec != TREE_EC_Ok) {
+        envelope_free(key_envelope);
+        envelope_free(value_envelope);
+    }
 
     return tree_error_to_map_error(ec);
 }

@@ -2,9 +2,10 @@
 #define CL_ZXCURSES_SCREEN_H
 #include "zxcurses/color.h"
 #include "zxcurses/error.h"
-#include "zxcurses/terminal.h"
+#include "zxcurses/types.h"
 
 TUIError create_screen_buffer(TermSizeType width, TermSizeType height);
+void free_screen_buffer();
 TUIError resize_screen_buffer(TermSizeType width, TermSizeType height);
 void clear_screen_buffer();
 void print_screen_buffer();
